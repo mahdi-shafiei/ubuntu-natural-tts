@@ -6,6 +6,17 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-10-21
+
+### Changed
+
+- README: each engine's sample now plays inline as a waveform video
+  that lights up as it is spoken, followed by a table comparing the
+  engines' sound, role, hardware, model size and license.
+- `scripts/make-samples.sh` regenerates the MP3 samples and calls the
+  new `scripts/render_samples.py`, which renders the three videos with
+  ffmpeg alone (from PATH, `--ffmpeg`, or the `imageio-ffmpeg` package).
+
 ## [0.1.0] - 2026-10-21
 
 ### Added
@@ -24,5 +35,6 @@ uses [Semantic Versioning](https://semver.org/).
 - `natural-tts setup`, `apply` and `teardown`, driven by a single
   `~/.config/natural-tts/settings.toml`.
 
-[Unreleased]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/releases/tag/v0.1.0
