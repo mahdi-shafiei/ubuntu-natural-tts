@@ -14,7 +14,7 @@ import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TextIO
+from typing import BinaryIO, TextIO
 
 from natural_tts import __version__
 from natural_tts.config import (
@@ -28,6 +28,7 @@ from natural_tts.ipc import STOP_MESSAGE, DaemonNotRunningError, send_message
 from natural_tts.selection import Source, read_text
 from natural_tts.system import Runner, run
 from natural_tts.systemd import SystemdError
+from natural_tts.text import decode_text
 
 SYSTEM_SPEECHD_CONF = Path("/etc/speech-dispatcher/speechd.conf")
 
@@ -57,7 +58,7 @@ class Env:
 
     paths: Paths = field(default_factory=_default_paths)
     runner: Runner = run
-    stdin: TextIO = field(default_factory=lambda: sys.stdin)
+    stdin: BinaryIO = field(default_factory=lambda: sys.stdin.buffer)
     stdout: TextIO = field(default_factory=lambda: sys.stdout)
     stderr: TextIO = field(default_factory=lambda: sys.stderr)
     send: Callable[[Path, str], None] = send_message
@@ -98,7 +99,7 @@ def cmd_read(args: argparse.Namespace, env: Env, settings: Settings) -> int:
 
 def cmd_say(args: argparse.Namespace, env: Env, settings: Settings) -> int:
     """Read the given text (or stdin) aloud."""
-    text = " ".join(args.text) if args.text else env.stdin.read()
+    text = " ".join(args.text) if args.text else decode_text(env.stdin.read())
     if text.strip():
         _send(env, settings, text)
     return 0
@@ -134,7 +135,7 @@ def cmd_piper_speak(
         cli_runner=env.runner,
     )
     try:
-        client.speak(env.stdin.read(), _parse_rate(args.rate))
+        client.speak(decode_text(env.stdin.read()), _parse_rate(args.rate))
     except (PiperError, AudioError) as exc:
         raise CommandError(str(exc)) from exc
     return 0

@@ -11,6 +11,19 @@ _SENTENCE_END = re.compile(r"(?<=[.!?;:])\s+")
 _COMMA = re.compile(r",\s+")
 
 
+def decode_text(data: bytes) -> str:
+    """Decode text from Speech Dispatcher or a pipe.
+
+    UTF-8 is expected; anything that is not valid UTF-8 is decoded as
+    ISO-8859-1, which is what Speech Dispatcher's generic module sends for
+    languages not declared UTF-8. The result never contains surrogates.
+    """
+    try:
+        return data.decode("utf-8")
+    except UnicodeDecodeError:
+        return data.decode("latin-1")
+
+
 def clean_text(text: str) -> str:
     """Normalise text copied from PDFs and web pages.
 

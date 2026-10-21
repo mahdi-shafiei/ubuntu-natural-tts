@@ -43,7 +43,7 @@ class World:
         self.env = Env(
             paths=self.paths,
             runner=self.runner,
-            stdin=io.StringIO(""),
+            stdin=io.BytesIO(b""),
             stdout=self.stdout,
             stderr=self.stderr,
             send=self.send,
@@ -72,8 +72,9 @@ class World:
             raise DaemonNotRunningError("not running or still starting")
         self.sent.append(message)
 
-    def run(self, *argv, stdin=""):
-        env = replace(self.env, stdin=io.StringIO(stdin))
+    def run(self, *argv, stdin: str | bytes = ""):
+        data = stdin.encode() if isinstance(stdin, str) else stdin
+        env = replace(self.env, stdin=io.BytesIO(data))
         return main(list(argv), env)
 
 
@@ -141,6 +142,16 @@ class TestServices:
             assert server.requests[0]["json"]["text"] == "Hi"
         (play,) = [c for c in world.runner.calls if c.argv[0] == "aplay"]
         assert play.stdin == b"RIFFwav"
+
+    def test_piper_speak_accepts_latin1_from_speech_dispatcher(self, world):
+        with LocalHTTPServer(body=b"RIFF") as server:
+            world.paths.settings_file.parent.mkdir(parents=True)
+            world.paths.settings_file.write_text(
+                f"[piper]\nport = {server.port}\n"
+            )
+            stdin = "Café".encode("latin-1")
+            assert world.run("piper-speak", stdin=stdin) == 0
+            assert server.requests[0]["json"]["text"] == "Café"
 
     @pytest.mark.parametrize("rate", ["", "fast", "nan"])
     def test_piper_speak_tolerates_bad_rate(self, world, rate):

@@ -2,7 +2,7 @@ import random
 
 import pytest
 
-from natural_tts.text import chunk_text, clean_text
+from natural_tts.text import chunk_text, clean_text, decode_text
 
 FIRST, MAX = 60, 300
 
@@ -106,3 +106,18 @@ class TestChunkText:
             chunk_text("x", 400, 300)
         with pytest.raises(ValueError, match="first_min"):
             chunk_text("x", 0, 300)
+
+
+class TestDecodeText:
+    def test_utf8(self):
+        assert decode_text("Café — “ok”".encode()) == "Café — “ok”"
+
+    def test_latin1_from_speech_dispatcher(self):
+        # Speech Dispatcher re-encodes text to ISO-8859-1 for languages
+        # its generic module config does not declare as UTF-8.
+        assert decode_text("Café naïve".encode("latin-1")) == "Café naïve"
+
+    def test_never_yields_surrogates(self):
+        text = decode_text(bytes(range(256)))
+        assert all(not 0xD800 <= ord(c) <= 0xDFFF for c in text)
+        text.encode("utf-8")  # must not raise
