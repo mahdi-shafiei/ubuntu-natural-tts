@@ -31,7 +31,65 @@ VOICE_TYPES = (
     "CHILD_MALE",
     "CHILD_FEMALE",
 )
-_ALWAYS_UTF8 = ("en", "en-US", "en-GB")
+# Languages declared UTF-8 regardless of the voice: requests in any other
+# language are recoded to ISO-8859-1 (e.g. Firefox reading a French page).
+# "c" is what Speech Dispatcher reports for the C/POSIX locale.
+UTF8_LANGUAGES = (
+    "c",
+    "en",
+    "en-US",
+    "en-GB",
+    "fr",
+    "de",
+    "es",
+    "it",
+    "pt",
+    "nl",
+    "sv",
+    "da",
+    "no",
+    "nb",
+    "fi",
+    "is",
+    "pl",
+    "cs",
+    "sk",
+    "hu",
+    "ro",
+    "bg",
+    "el",
+    "ru",
+    "uk",
+    "be",
+    "sr",
+    "hr",
+    "sl",
+    "et",
+    "lv",
+    "lt",
+    "tr",
+    "ca",
+    "eu",
+    "gl",
+    "ga",
+    "cy",
+    "ar",
+    "fa",
+    "he",
+    "hi",
+    "bn",
+    "ur",
+    "ta",
+    "te",
+    "zh",
+    "ja",
+    "ko",
+    "vi",
+    "th",
+    "id",
+    "ms",
+    "sw",
+)
 
 
 def _languages(voice: str) -> tuple[str, str]:
@@ -62,7 +120,7 @@ def render_module_conf(settings: Settings, cli: str) -> str:
         'piper-speak $RATE"',
         f'GenericCmdDependency "{cli}"',
     ]
-    for code in dict.fromkeys((language, locale, *_ALWAYS_UTF8)):
+    for code in dict.fromkeys((language, locale, *UTF8_LANGUAGES)):
         lines.append(f'GenericLanguage "{code}" "{code}" "utf-8"')
     lines += [
         f'AddVoice "{language}" "{kind}" "{voice}"' for kind in VOICE_TYPES

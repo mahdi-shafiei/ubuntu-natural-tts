@@ -48,6 +48,17 @@ class TestRenderModuleConf:
         for kind in ("MALE1", "FEMALE1", "CHILD_MALE"):
             assert f'AddVoice "de" "{kind}" "de_DE-thorsten-high"' in conf
 
+    @pytest.mark.parametrize(
+        "code",
+        ["fr", "de", "es", "it", "pt", "ru", "zh", "ja", "ar", "fa", "hi", "c"],
+    )
+    def test_common_languages_are_declared_utf8(self, tmp_path, code):
+        # Undeclared languages are recoded to ISO-8859-1, which turns
+        # dashes and non-Latin scripts into "?" (e.g. Firefox reading a
+        # French page with an English voice).
+        conf = render_module_conf(make_settings(tmp_path), CLI)
+        assert f'GenericLanguage "{code}" "{code}" "utf-8"' in conf
+
     def test_language_lines_are_not_duplicated(self, tmp_path):
         conf = render_module_conf(make_settings(tmp_path), CLI)
         assert conf.count('GenericLanguage "en-US"') == 1
