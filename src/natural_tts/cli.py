@@ -27,6 +27,7 @@ from natural_tts.config import (
 from natural_tts.ipc import STOP_MESSAGE, DaemonNotRunningError, send_message
 from natural_tts.selection import Source, read_text
 from natural_tts.system import Runner, run
+from natural_tts.systemd import SystemdError
 
 SYSTEM_SPEECHD_CONF = Path("/etc/speech-dispatcher/speechd.conf")
 
@@ -346,7 +347,14 @@ def main(argv: Sequence[str] | None = None, env: Env | None = None) -> int:
         return func(args, env, settings)
     except CommandError as exc:
         print(f"natural-tts: {exc}", file=env.stderr)
-        return 1
+    except SystemdError as exc:
+        print(
+            f"natural-tts: {exc}\n"
+            "natural-tts needs a systemd user session (a normal desktop "
+            "login); check: systemctl --user status",
+            file=env.stderr,
+        )
+    return 1
 
 
 if __name__ == "__main__":

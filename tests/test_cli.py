@@ -247,6 +247,20 @@ class TestSetup:
         assert world.paths.settings_file.exists()  # user data is kept
 
 
+class TestSystemdFailure:
+    def test_systemctl_failure_is_a_clear_error_not_a_traceback(self, world):
+        def respond(argv):
+            if argv[:2] == ("systemctl", "--user"):
+                return Result(1, b"", b"Failed to connect to bus")
+            return world.respond(argv)
+
+        world.env = replace(world.env, runner=RecordingRunner(respond))
+        assert world.run("setup") == 1
+        err = world.stderr.getvalue()
+        assert "Failed to connect to bus" in err
+        assert "systemd user session" in err
+
+
 class TestMisc:
     def test_invalid_settings_are_reported_with_exit_code_2(self, world):
         world.paths.settings_file.parent.mkdir(parents=True)

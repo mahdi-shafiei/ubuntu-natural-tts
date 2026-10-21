@@ -13,6 +13,10 @@ SPEECHD_SERVICE = "speech-dispatcher.service"
 _SYSTEMCTL = ("systemctl", "--user")
 
 
+class SystemdError(RuntimeError):
+    """Raised when a required ``systemctl --user`` call fails."""
+
+
 @dataclass(frozen=True)
 class Unit:
     """A minimal long-running systemd user service."""
@@ -69,7 +73,7 @@ def _systemctl(runner: Runner, *args: str, check: bool = True) -> None:
     argv = (*_SYSTEMCTL, *args)
     result = runner(argv)
     if check and not result.ok:
-        raise RuntimeError(result.describe(argv))
+        raise SystemdError(result.describe(argv))
 
 
 def install_units(settings: Settings, runner: Runner = run) -> None:

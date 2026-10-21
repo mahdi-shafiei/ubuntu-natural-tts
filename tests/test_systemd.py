@@ -5,6 +5,7 @@ from natural_tts.system import Result
 from natural_tts.systemd import (
     SPEECHD_SERVICE,
     SPEECHD_SOCKET,
+    SystemdError,
     Unit,
     activate,
     deactivate,
@@ -100,7 +101,7 @@ class TestInstall:
         ]
 
     def test_activate_raises_when_enable_fails(self):
-        with pytest.raises(RuntimeError, match="unit not found"):
+        with pytest.raises(SystemdError, match="unit not found"):
             activate(FakeSystemctl(fail={"enable"}))
 
     def test_speechd_restart_failure_is_tolerated(self):
