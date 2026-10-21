@@ -1,0 +1,147 @@
+import pytest
+
+from natural_tts.config import KOKORO_SERVICE, PIPER_SERVICE, Paths, Settings
+from natural_tts.system import Result
+from natural_tts.systemd import (
+    SPEECHD_SERVICE,
+    SPEECHD_SOCKET,
+    Unit,
+    activate,
+    deactivate,
+    install_units,
+    render_units,
+    restart_services,
+    uninstall_units,
+)
+
+
+class FakeSystemctl:
+    def __init__(self, fail=()):
+        self.calls = []
+        self.fail = set(fail)
+
+    def __call__(self, argv, *, stdin=None, timeout=None):
+        self.calls.append(tuple(argv))
+        code = 1 if any(f in argv for f in self.fail) else 0
+        return Result(code, b"", b"unit not found" if code else b"")
+
+
+def make_settings(tmp_path):
+    paths = Paths.from_env({"XDG_RUNTIME_DIR": str(tmp_path)}, home=tmp_path)
+    return Settings(paths=paths)
+
+
+class TestUnit:
+    def test_render(self):
+        unit = Unit(
+            description="Demo",
+            exec_start=("/bin/x", "serve"),
+            after=("a.service",),
+        )
+        assert unit.render() == (
+            "[Unit]\n"
+            "Description=Demo\n"
+            "After=a.service\n"
+            "\n"
+            "[Service]\n"
+            "ExecStart=/bin/x serve\n"
+            "Restart=on-failure\n"
+            "RestartSec=2\n"
+            "\n"
+            "[Install]\n"
+            "WantedBy=default.target\n"
+        )
+
+    def test_render_without_after(self):
+        assert "After=" not in Unit("D", ("/bin/x",)).render()
+
+    def test_rejects_unquotable_arguments(self):
+        with pytest.raises(ValueError, match="cannot contain"):
+            Unit("D", ("/home/a b/x",)).render()
+
+
+class TestRenderUnits:
+    def test_both_services_run_the_cli(self, tmp_path):
+        settings = make_settings(tmp_path)
+        units = render_units(settings)
+        cli = settings.paths.cli
+        assert set(units) == {PIPER_SERVICE, KOKORO_SERVICE}
+        assert f"ExecStart={cli} piper-server\n" in units[PIPER_SERVICE]
+        assert f"ExecStart={cli} daemon\n" in units[KOKORO_SERVICE]
+        assert "pipewire" in units[KOKORO_SERVICE]
+
+    def test_units_carry_no_voice_settings(self, tmp_path):
+        # Settings live only in settings.toml (read at start-up).
+        units = render_units(make_settings(tmp_path))
+        assert all(
+            "lessac" not in u and "af_heart" not in u for u in units.values()
+        )
+
+
+class TestInstall:
+    def test_install_writes_units_and_reloads(self, tmp_path):
+        settings = make_settings(tmp_path)
+        runner = FakeSystemctl()
+        install_units(settings, runner)
+        for name in (PIPER_SERVICE, KOKORO_SERVICE):
+            assert (settings.paths.systemd_user_dir / name).is_file()
+        assert runner.calls == [("systemctl", "--user", "daemon-reload")]
+
+    def test_activate_enables_socket_and_services(self, tmp_path):
+        runner = FakeSystemctl()
+        activate(runner)
+        assert runner.calls == [
+            (
+                "systemctl",
+                "--user",
+                "enable",
+                "--now",
+                SPEECHD_SOCKET,
+                PIPER_SERVICE,
+                KOKORO_SERVICE,
+            ),
+            ("systemctl", "--user", "restart", SPEECHD_SERVICE),
+        ]
+
+    def test_activate_raises_when_enable_fails(self):
+        with pytest.raises(RuntimeError, match="unit not found"):
+            activate(FakeSystemctl(fail={"enable"}))
+
+    def test_speechd_restart_failure_is_tolerated(self):
+        # speech-dispatcher.service may not be running yet; the socket
+        # starts it on demand.
+        activate(FakeSystemctl(fail={"restart"}))
+
+    def test_restart_services(self):
+        runner = FakeSystemctl()
+        restart_services(runner)
+        assert runner.calls == [
+            (
+                "systemctl",
+                "--user",
+                "restart",
+                PIPER_SERVICE,
+                KOKORO_SERVICE,
+                SPEECHD_SERVICE,
+            )
+        ]
+
+    def test_deactivate_and_uninstall(self, tmp_path):
+        settings = make_settings(tmp_path)
+        runner = FakeSystemctl()
+        install_units(settings, runner)
+        deactivate(runner)
+        uninstall_units(settings, runner)
+        assert (
+            "systemctl",
+            "--user",
+            "disable",
+            "--now",
+            PIPER_SERVICE,
+            KOKORO_SERVICE,
+        ) in runner.calls
+        assert not (settings.paths.systemd_user_dir / PIPER_SERVICE).exists()
+        assert runner.calls[-1] == ("systemctl", "--user", "daemon-reload")
+
+    def test_deactivate_tolerates_missing_units(self):
+        deactivate(FakeSystemctl(fail={"disable"}))
