@@ -20,13 +20,25 @@ The same sentence, read by each engine. Press play on each:
      videos uploaded through its web editor: drag the file onto this line
      on github.com. -->
 
+
+https://github.com/user-attachments/assets/4be1daea-9db4-4fcf-bbb6-1e283f1394a0
+
+
 **Piper**: the natural-tts system voice
+
+
+https://github.com/user-attachments/assets/6413770f-cfbd-47a1-9619-37454c34ae6d
+
 
 <!-- media/piper.mp4 (drag onto this line on github.com). -->
 
 **Kokoro**: the natural-tts read-anything hotkey
 
 <!-- media/kokoro.mp4 (drag onto this line on github.com). -->
+
+
+https://github.com/user-attachments/assets/07156e2c-69fa-446a-9be4-e507cbc39142
+
 
 | | espeak-ng | Piper | Kokoro-82M |
 |---|---|---|---|
