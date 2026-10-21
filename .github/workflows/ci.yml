@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint, types and unit tests
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - name: Install development dependencies
+        run: uv venv && uv pip install -e ".[dev]"
+      - name: Run pre-commit (ruff, mypy, shellcheck, pytest with coverage gate)
+        run: uv run pre-commit run --all-files --show-diff-on-failure
+
+  integration:
+    name: Integration (real gsettings and GNOME schemas)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.12"
+      - name: Install GNOME settings schemas and dconf
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y gnome-settings-daemon-common dconf-cli \
+            dconf-service dbus-daemon
+      - name: Install development dependencies
+        run: uv venv && uv pip install -e ".[dev]"
+      - name: Run integration tests on a private D-Bus session
+        run: dbus-run-session -- uv run pytest -m integration --no-cov -rs
+
+  install:
+    name: install.sh end to end (no desktop session)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      - name: Run the installer
+        run: ./install.sh --no-setup
+      - name: Synthesize with Piper and check the output
+        run: |
+          "$HOME/.local/bin/natural-tts" --version
+          venv="$HOME/.local/share/natural-tts/venv"
+          "$venv/bin/python" -m piper.download_voices \
+            --data-dir "$HOME/.local/share/natural-tts/voices" \
+            en_US-ljspeech-high
+          "$venv/bin/python" - <<'PY'
+          import os
+          import subprocess
+
+          from natural_tts.config import Paths, load_settings
+          from natural_tts.piper import cli_command
+
+          settings = load_settings(Paths.from_env(os.environ))
+          wav = subprocess.run(
+              cli_command(settings, 1.0), input=b"Hello from CI.\n",
+              capture_output=True, check=True,
+          ).stdout
+          assert wav[:4] == b"RIFF" and len(wav) > 10_000, len(wav)
+          print(f"Piper produced {len(wav)} bytes of WAV")
+          PY
