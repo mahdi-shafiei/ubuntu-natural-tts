@@ -158,12 +158,22 @@ def _default_voice(ctx: Context) -> Check:
 
 def _audio_routing(ctx: Context) -> Check:
     devices = ctx.runner(("aplay", "-L")).text.split()
-    ok = "pipewire" in devices
+    on_pipewire = "on PipeWire" in ctx.runner(("pactl", "info")).text
+    # aplay and PortAudio use plain ALSA; the matching plugin routes it to
+    # the running sound server. Never suggest pipewire-alsa on PulseAudio:
+    # it conflicts with pulseaudio and would replace the sound server.
+    if on_pipewire:
+        ok, package = "pipewire" in devices, "pipewire-alsa"
+    else:
+        ok, package = "pulse" in devices, "libasound2-plugins"
+    server = "PipeWire" if on_pipewire else "PulseAudio"
     return Check(
         "Audio routing",
         ok,
-        "ALSA routes through PipeWire" if ok else "no 'pipewire' ALSA device",
-        "sudo apt install pipewire-alsa",
+        f"ALSA routes through {server}"
+        if ok
+        else f"no ALSA device for {server}",
+        f"sudo apt install {package}",
     )
 
 

@@ -15,6 +15,7 @@ class FakeSystem:
         self.inactive: set[str] = set()
         self.modules = "OUTPUT MODULES\nespeak-ng\npiper-generic\n"
         self.aplay = "default\npipewire\n"
+        self.server = "Server Name: PulseAudio (on PipeWire 1.0.5)\n"
         self.hotkeys = "[" + ", ".join(f"'{h.path}'" for h in HOTKEYS) + "]"
 
     def __call__(self, argv, *, stdin=None, timeout=None):
@@ -29,6 +30,8 @@ class FakeSystem:
             return Result(0, self.modules.encode(), b"")
         if argv == ("aplay", "-L"):
             return Result(0, self.aplay.encode(), b"")
+        if argv == ("pactl", "info"):
+            return Result(0, self.server.encode(), b"")
         if argv[:2] == ("gsettings", "get") and argv[2] == MEDIA_KEYS_SCHEMA:
             return Result(0, self.hotkeys.encode(), b"")
         raise AssertionError(argv)
@@ -79,6 +82,7 @@ class TestRunChecks:
         ctx.runner.modules = "OUTPUT MODULES\nespeak-ng\n"
         ctx.runner.aplay = "default\n"
         ctx.runner.hotkeys = "@as []"
+        ctx.runner.server = ""
         for check in run_checks(ctx):
             if not check.ok:
                 assert check.fix, check.name
@@ -123,6 +127,19 @@ class TestRunChecks:
     def test_pipewire_alsa_missing(self, ctx):
         ctx.runner.aplay = "default\nsysdefault\n"
         assert "pipewire-alsa" in failed(ctx)["Audio routing"].fix
+
+    def test_pulseaudio_routing_is_accepted(self, ctx):
+        ctx.runner.server = "Server Name: pulseaudio\n"
+        ctx.runner.aplay = "default\npulse\n"
+        assert "Audio routing" not in failed(ctx)
+
+    def test_pulseaudio_without_plugin_never_suggests_pipewire_alsa(self, ctx):
+        # pipewire-alsa conflicts with pulseaudio: installing it would
+        # remove PulseAudio and switch the system's sound server.
+        ctx.runner.server = "Server Name: pulseaudio\n"
+        ctx.runner.aplay = "default\n"
+        fix = failed(ctx)["Audio routing"].fix
+        assert "libasound2-plugins" in fix and "pipewire-alsa" not in fix
 
     def test_clipboard_tools_missing(self, ctx):
         ctx.which = lambda name: None
