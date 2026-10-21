@@ -135,7 +135,9 @@ def _type_error(qualified: str, kind: type) -> SettingsError:
 class PiperSettings:
     """Piper (system voice) settings."""
 
-    voice: str = "en_US-lessac-high"
+    # LJ Speech is public domain; voices such as en_US-lessac are trained on
+    # research-only datasets, so they are opt-in.
+    voice: str = "en_US-ljspeech-high"
     port: int = 5150
     length_scale: float = 1.05
     sentence_silence: float = 0.25
@@ -145,7 +147,7 @@ class PiperSettings:
         if not _PIPER_VOICE_RE.match(self.voice):
             raise SettingsError(
                 f"piper.voice {self.voice!r} is not a Piper voice name "
-                "like 'en_US-lessac-high'"
+                "like 'en_US-ljspeech-high'"
             )
         if not 1024 <= self.port <= 65535:
             raise SettingsError("piper.port must be in 1024..65535")

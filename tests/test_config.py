@@ -60,7 +60,10 @@ class TestLoadSettings:
         assert settings.kokoro == KokoroSettings()
 
     def test_defaults(self):
-        assert PiperSettings().voice == "en_US-lessac-high"
+        # Trained on LJ Speech, which is public domain. The popular
+        # en_US-lessac voice is trained on a research-only dataset, so it is
+        # opt-in rather than the default.
+        assert PiperSettings().voice == "en_US-ljspeech-high"
         assert PiperSettings().port == 5150
         assert KokoroSettings().voice == "af_heart"
         assert KokoroSettings().speed == 1.0
@@ -138,5 +141,5 @@ class TestDerivedValues:
     def test_piper_model_path(self, tmp_path):
         settings = Settings(paths=make_paths(tmp_path))
         assert settings.piper_model == (
-            settings.paths.voices_dir / "en_US-lessac-high.onnx"
+            settings.paths.voices_dir / f"{settings.piper.voice}.onnx"
         )

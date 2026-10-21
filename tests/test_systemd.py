@@ -1,6 +1,11 @@
 import pytest
 
-from natural_tts.config import KOKORO_SERVICE, PIPER_SERVICE
+from natural_tts.config import (
+    KOKORO_SERVICE,
+    PIPER_SERVICE,
+    KokoroSettings,
+    PiperSettings,
+)
 from natural_tts.system import Result
 from natural_tts.systemd import (
     SPEECHD_SERVICE,
@@ -71,7 +76,8 @@ class TestRenderUnits:
         # Settings live only in settings.toml (read at start-up).
         units = render_units(make_settings(tmp_path))
         assert all(
-            "lessac" not in u and "af_heart" not in u for u in units.values()
+            PiperSettings().voice not in u and KokoroSettings().voice not in u
+            for u in units.values()
         )
 
 

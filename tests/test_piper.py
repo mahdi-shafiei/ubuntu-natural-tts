@@ -57,7 +57,7 @@ class TestCommands:
         assert cmd[:3] == [str(s.paths.venv_python), "-m", "piper.http_server"]
         assert cmd[cmd.index("--host") + 1] == "127.0.0.1"
         assert cmd[cmd.index("--port") + 1] == "5150"
-        assert cmd[cmd.index("-m", 3) + 1] == "en_US-lessac-high"
+        assert cmd[cmd.index("-m", 3) + 1] == s.piper.voice
         assert cmd[cmd.index("--data-dir") + 1] == str(s.paths.voices_dir)
         assert cmd[cmd.index("--sentence-silence") + 1] == "0.25"
 
@@ -81,7 +81,7 @@ class TestPiperClient:
         (req,) = fake_server.requests
         assert req["path"] == "/synthesize"
         assert req["json"]["text"] == "Café — don't stop"
-        assert req["json"]["voice"] == "en_US-lessac-high"
+        assert req["json"]["voice"] == PiperSettings().voice
         assert req["json"]["length_scale"] == pytest.approx(1.05)
 
     def test_rate_reaches_server(self, tmp_path, fake_server):
