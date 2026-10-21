@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regenerate the before/after audio samples in docs/samples/, then render
-# the comparison image and video with render_comparison.py.
+# one waveform video per engine with render_samples.py.
 #
 # Requires an installed natural-tts (./install.sh), espeak-ng and ffmpeg.
 set -euo pipefail
@@ -54,4 +54,4 @@ for name in espeak piper kokoro; do
     "$OUT/$name.mp3"
 done
 echo "Wrote $OUT/{espeak,piper,kokoro}.mp3"
-python3 "$ROOT/scripts/render_comparison.py"
+python3 "$ROOT/scripts/render_samples.py"

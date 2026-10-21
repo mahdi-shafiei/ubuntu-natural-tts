@@ -12,13 +12,21 @@ locally: no account, no cloud, no text leaves your machine.
 
 ## Hear the difference
 
-The same sentence, read by each engine in turn:
+The same sentence, read by each engine. Press play on each:
 
-<!-- Video: media/comparison.mp4 from scripts/render_comparison.py. GitHub
-     plays only videos uploaded through its editor: drag the file onto this
-     line on github.com. -->
+**espeak-ng**: what Linux uses out of the box
 
-![Waveforms of the same sentence from espeak-ng, Piper and Kokoro](docs/samples/comparison.png)
+<!-- media/espeak.mp4 from scripts/render_samples.py. GitHub plays only
+     videos uploaded through its web editor: drag the file onto this line
+     on github.com. -->
+
+**Piper**: the natural-tts system voice
+
+<!-- media/piper.mp4 (drag onto this line on github.com). -->
+
+**Kokoro**: the natural-tts read-anything hotkey
+
+<!-- media/kokoro.mp4 (drag onto this line on github.com). -->
 
 | | espeak-ng | Piper | Kokoro-82M |
 |---|---|---|---|
