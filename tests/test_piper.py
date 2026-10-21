@@ -1,11 +1,6 @@
-import json
-import socket
-import threading
-from http.server import BaseHTTPRequestHandler, HTTPServer
-
 import pytest
 
-from natural_tts.config import Paths, PiperSettings, Settings
+from natural_tts.config import PiperSettings
 from natural_tts.piper import (
     PiperClient,
     PiperError,
@@ -15,50 +10,19 @@ from natural_tts.piper import (
     server_command,
 )
 from natural_tts.system import Result
+from tests.fakes import LocalHTTPServer, unused_port
+from tests.fakes import make_settings as base_settings
 
 WAV = b"RIFF....WAVEfake"
 
 
 def make_settings(tmp_path, port=5150):
-    paths = Paths.from_env({"XDG_RUNTIME_DIR": str(tmp_path)}, home=tmp_path)
-    return Settings(paths=paths, piper=PiperSettings(port=port))
+    return base_settings(tmp_path, piper=PiperSettings(port=port))
 
 
-class FakePiperServer:
-    """A stand-in for `python -m piper.http_server` on a random port."""
-
-    def __init__(self, status=200):
-        self.requests: list[dict[str, object]] = []
-        outer = self
-
-        class Handler(BaseHTTPRequestHandler):
-            def do_POST(self):
-                body = self.rfile.read(int(self.headers["Content-Length"]))
-                outer.requests.append(
-                    {"path": self.path, "json": json.loads(body)}
-                )
-                self.send_response(status)
-                self.end_headers()
-                self.wfile.write(WAV)
-
-            def log_message(self, *args):
-                pass
-
-        self.httpd = HTTPServer(("127.0.0.1", 0), Handler)
-        self.port = self.httpd.server_address[1]
-        threading.Thread(
-            target=self.httpd.serve_forever, args=(0.05,), daemon=True
-        ).start()
-
-    def close(self):
-        self.httpd.shutdown()
-        self.httpd.server_close()
-
-
-def unused_port() -> int:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return int(s.getsockname()[1])
+def FakePiperServer(status=200):
+    """A stand-in for `python -m piper.http_server`."""
+    return LocalHTTPServer(status=status, body=WAV)
 
 
 @pytest.fixture

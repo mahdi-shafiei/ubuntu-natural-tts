@@ -1,6 +1,6 @@
 import pytest
 
-from natural_tts.config import SPEECHD_MODULE, Paths, PiperSettings, Settings
+from natural_tts.config import SPEECHD_MODULE, PiperSettings
 from natural_tts.speechd import (
     DEFAULT_MARKER,
     install_speechd,
@@ -9,6 +9,7 @@ from natural_tts.speechd import (
     set_default_module,
     uninstall_speechd,
 )
+from tests.fakes import make_settings as base_settings
 
 CLI = "/home/u/.local/share/natural-tts/venv/bin/natural-tts"
 SYSTEM_CONF = (
@@ -21,8 +22,7 @@ SYSTEM_CONF = (
 
 
 def make_settings(tmp_path, voice="en_US-lessac-high"):
-    paths = Paths.from_env({"XDG_RUNTIME_DIR": str(tmp_path)}, home=tmp_path)
-    return Settings(paths=paths, piper=PiperSettings(voice=voice))
+    return base_settings(tmp_path, piper=PiperSettings(voice=voice))
 
 
 class TestRenderModuleConf:

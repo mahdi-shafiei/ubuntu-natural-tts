@@ -1,6 +1,6 @@
 import pytest
 
-from natural_tts.config import KOKORO_SERVICE, PIPER_SERVICE, Paths, Settings
+from natural_tts.config import KOKORO_SERVICE, PIPER_SERVICE
 from natural_tts.system import Result
 from natural_tts.systemd import (
     SPEECHD_SERVICE,
@@ -13,22 +13,18 @@ from natural_tts.systemd import (
     restart_services,
     uninstall_units,
 )
+from tests.fakes import RecordingRunner, make_settings
 
 
-class FakeSystemctl:
-    def __init__(self, fail=()):
-        self.calls = []
-        self.fail = set(fail)
+def FakeSystemctl(fail=()):
+    """systemctl that fails any call containing one of ``fail``."""
 
-    def __call__(self, argv, *, stdin=None, timeout=None):
-        self.calls.append(tuple(argv))
-        code = 1 if any(f in argv for f in self.fail) else 0
-        return Result(code, b"", b"unit not found" if code else b"")
+    def respond(argv):
+        if any(f in argv for f in fail):
+            return Result(1, b"", b"unit not found")
+        return Result(0, b"", b"")
 
-
-def make_settings(tmp_path):
-    paths = Paths.from_env({"XDG_RUNTIME_DIR": str(tmp_path)}, home=tmp_path)
-    return Settings(paths=paths)
+    return RecordingRunner(respond)
 
 
 class TestUnit:
@@ -85,12 +81,12 @@ class TestInstall:
         install_units(settings, runner)
         for name in (PIPER_SERVICE, KOKORO_SERVICE):
             assert (settings.paths.systemd_user_dir / name).is_file()
-        assert runner.calls == [("systemctl", "--user", "daemon-reload")]
+        assert runner.argvs == [("systemctl", "--user", "daemon-reload")]
 
     def test_activate_enables_socket_and_services(self, tmp_path):
         runner = FakeSystemctl()
         activate(runner)
-        assert runner.calls == [
+        assert runner.argvs == [
             (
                 "systemctl",
                 "--user",
@@ -115,7 +111,7 @@ class TestInstall:
     def test_restart_services(self):
         runner = FakeSystemctl()
         restart_services(runner)
-        assert runner.calls == [
+        assert runner.argvs == [
             (
                 "systemctl",
                 "--user",
@@ -139,9 +135,9 @@ class TestInstall:
             "--now",
             PIPER_SERVICE,
             KOKORO_SERVICE,
-        ) in runner.calls
+        ) in runner.argvs
         assert not (settings.paths.systemd_user_dir / PIPER_SERVICE).exists()
-        assert runner.calls[-1] == ("systemctl", "--user", "daemon-reload")
+        assert runner.argvs[-1] == ("systemctl", "--user", "daemon-reload")
 
     def test_deactivate_tolerates_missing_units(self):
         deactivate(FakeSystemctl(fail={"disable"}))

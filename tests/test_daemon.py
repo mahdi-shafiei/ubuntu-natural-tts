@@ -4,6 +4,7 @@ from contextlib import contextmanager
 
 from natural_tts.daemon import serve
 from natural_tts.ipc import STOP_MESSAGE, MessageServer, send_message
+from tests.fakes import make_settings
 
 
 class RecordingEngine:
@@ -73,13 +74,10 @@ class NullSink:
 
 
 def test_run_warms_up_before_listening_and_reports_ready(tmp_path):
-    from natural_tts.config import Paths, Settings
     from natural_tts.daemon import run
 
-    paths = Paths.from_env(
-        {"XDG_RUNTIME_DIR": str(tmp_path / "r")}, home=tmp_path
-    )
-    settings = Settings(paths=paths)
+    settings = make_settings(tmp_path)
+    paths = settings.paths
     synth, ready = FakeSynth(), []
     calls = [0]
 

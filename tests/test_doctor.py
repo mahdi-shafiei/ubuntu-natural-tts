@@ -1,10 +1,11 @@
 import pytest
 
-from natural_tts.config import KOKORO_SERVICE, PIPER_SERVICE, Paths, Settings
+from natural_tts.config import KOKORO_SERVICE, PIPER_SERVICE
 from natural_tts.doctor import Check, Context, format_report, run_checks
 from natural_tts.hotkeys import HOTKEYS, MEDIA_KEYS_SCHEMA
 from natural_tts.speechd import DEFAULT_MARKER
 from natural_tts.system import Result
+from tests.fakes import LocalHTTPServer, make_settings, unused_port
 
 
 class FakeSystem:
@@ -35,10 +36,8 @@ class FakeSystem:
 
 @pytest.fixture
 def ctx(tmp_path):
-    paths = Paths.from_env(
-        {"XDG_RUNTIME_DIR": str(tmp_path / "run")}, home=tmp_path
-    )
-    settings = Settings(paths=paths)
+    settings = make_settings(tmp_path)
+    paths = settings.paths
     paths.cli.parent.mkdir(parents=True)
     paths.cli.write_text("#!/bin/sh\n")
     settings.piper_model.parent.mkdir(parents=True)
@@ -169,32 +168,13 @@ class TestFormat:
 
 
 class TestHttpOk:
-    def test_real_server(self):
-        import socket
-        import threading
-        from http.server import BaseHTTPRequestHandler, HTTPServer
-
+    def test_answers_from_a_real_server(self):
         from natural_tts.doctor import http_ok
 
-        class Handler(BaseHTTPRequestHandler):
-            def do_GET(self):
-                self.send_response(200)
-                self.end_headers()
+        with LocalHTTPServer() as server:
+            assert http_ok(f"http://127.0.0.1:{server.port}/voices")
 
-            def log_message(self, *args):
-                pass
+    def test_nothing_listening(self):
+        from natural_tts.doctor import http_ok
 
-        httpd = HTTPServer(("127.0.0.1", 0), Handler)
-        threading.Thread(
-            target=httpd.serve_forever, args=(0.05,), daemon=True
-        ).start()
-        try:
-            port = httpd.server_address[1]
-            assert http_ok(f"http://127.0.0.1:{port}/voices")
-        finally:
-            httpd.shutdown()
-            httpd.server_close()
-        with socket.socket() as s:
-            s.bind(("127.0.0.1", 0))
-            free = s.getsockname()[1]
-        assert not http_ok(f"http://127.0.0.1:{free}/voices")
+        assert not http_ok(f"http://127.0.0.1:{unused_port()}/voices")
