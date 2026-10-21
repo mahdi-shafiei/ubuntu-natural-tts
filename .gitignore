@@ -9,4 +9,4 @@ htmlcov/
 .pytest_cache/
 dist/
 *.egg-info/
-comparison.mp4
+media/

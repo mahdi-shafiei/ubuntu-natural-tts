@@ -10,18 +10,27 @@ locally: no account, no cloud, no text leaves your machine.
 ![Ubuntu 24.04+](https://img.shields.io/badge/Ubuntu-24.04%2B-E95420?logo=ubuntu&logoColor=white)
 ![Python 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20%7C%203.12-3776AB?logo=python&logoColor=white)
 
-<!-- Comparison video: drag comparison.mp4 (from scripts/make-samples.sh)
-     into GitHub's editor on this line to embed an inline player. -->
-
 ## Hear the difference
 
-The same sentence, three engines:
+The same sentence, three engines. Press play:
 
-| | Engine | Used for |
-|---|---|---|
-| ▶ [espeak-ng.mp3](docs/samples/espeak.mp3) | espeak-ng | What Linux uses out of the box |
-| ▶ [piper.mp3](docs/samples/piper.mp3) | [Piper](https://github.com/OHF-Voice/piper1-gpl) | System voice: Firefox Reader View, Foliate, Orca |
-| ▶ [kokoro.mp3](docs/samples/kokoro.mp3) | [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) | Read-anything hotkey |
+**1. espeak-ng: what Linux uses out of the box**
+
+<!-- Video: media/espeak.mp4 from scripts/make-samples.sh. GitHub plays
+     only videos uploaded through its editor: drag the file onto this line
+     on github.com. -->
+
+**2. Piper: the natural-tts system voice (Firefox Reader View, Foliate,
+Orca)**
+
+<!-- Video: media/piper.mp4 (drag onto this line on github.com). -->
+
+**3. Kokoro: the natural-tts read-anything hotkey**
+
+<!-- Video: media/kokoro.mp4 (drag onto this line on github.com). -->
+
+Audio only: [espeak-ng](docs/samples/espeak.mp3) ·
+[Piper](docs/samples/piper.mp3) · [Kokoro](docs/samples/kokoro.mp3)
 
 ## Quick start
 
