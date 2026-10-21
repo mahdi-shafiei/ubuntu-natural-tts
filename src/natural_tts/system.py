@@ -37,6 +37,25 @@ class Result:
         return f"{message}: {detail}" if detail else message
 
 
+_UNSAFE = frozenset(" \t\n'\"\\")
+
+
+def plain_argument(value: str) -> str:
+    """Return ``value`` if it needs no quoting in config files.
+
+    Speech Dispatcher's dotconf strings and systemd's ExecStart each have
+    their own quoting rules; refusing whitespace and quotes keeps both safe.
+
+    Raises:
+        ValueError: if ``value`` contains whitespace, quotes or backslashes.
+    """
+    if _UNSAFE.intersection(value):
+        raise ValueError(
+            f"{value!r} cannot contain whitespace, quotes or backslashes"
+        )
+    return value
+
+
 class Runner(Protocol):
     """Signature of ``run``; tests substitute fakes."""
 

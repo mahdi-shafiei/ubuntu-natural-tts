@@ -32,3 +32,19 @@ class TestResult:
 
     def test_describe_without_stderr(self):
         assert Result(1, b"", b"").describe(["x"]) == "x failed (exit 1)"
+
+
+class TestPlainArgument:
+    def test_accepts_ordinary_paths(self):
+        from natural_tts.system import plain_argument
+
+        assert plain_argument("/home/u/.local/bin/x") == "/home/u/.local/bin/x"
+
+    def test_rejects_unsafe(self):
+        import pytest
+
+        from natural_tts.system import plain_argument
+
+        for bad in ("a b", "a'b", 'a"b', "a\\b", "a\tb"):
+            with pytest.raises(ValueError, match="cannot contain"):
+                plain_argument(bad)
