@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable
 from typing import Protocol
 
@@ -43,6 +44,15 @@ class WarmSynthesizer(Synthesizer, Protocol):
         ...
 
 
+def announce(message: str) -> None:
+    """Print a status line and flush it.
+
+    Under systemd stdout is a pipe and therefore block-buffered; without the
+    flush the line would not appear in the journal.
+    """
+    print(message, file=sys.stdout, flush=True)
+
+
 def serve(
     server: MessageServer,
     engine: Engine,
@@ -62,7 +72,7 @@ def run(
     synthesizer: WarmSynthesizer,
     sink: AudioSink,
     *,
-    on_ready: Callable[[str], None] = print,
+    on_ready: Callable[[str], None] = announce,
     keep_running: Callable[[], bool] = lambda: True,
 ) -> None:
     """Warm up, then listen on the daemon socket and speak what arrives.

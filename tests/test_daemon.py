@@ -101,3 +101,25 @@ def test_run_warms_up_before_listening_and_reports_ready(tmp_path):
     )
     assert ready == ["natural-tts ready (voice af_heart, speed 1.0)"]
     assert not paths.kokoro_socket.exists()
+
+
+def test_ready_message_is_flushed_for_the_journal(monkeypatch):
+    # Under systemd, stdout is a pipe and block-buffered: an unflushed
+    # "ready" line would never reach `journalctl --user -u ...`.
+    from natural_tts import daemon
+
+    class Stream:
+        def __init__(self):
+            self.text, self.flushed = "", False
+
+        def write(self, s):
+            self.text += s
+            self.flushed = False
+
+        def flush(self):
+            self.flushed = True
+
+    stream = Stream()
+    monkeypatch.setattr("sys.stdout", stream)
+    daemon.announce("natural-tts ready")
+    assert stream.text == "natural-tts ready\n" and stream.flushed
