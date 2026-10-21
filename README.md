@@ -12,25 +12,23 @@ locally: no account, no cloud, no text leaves your machine.
 
 ## Hear the difference
 
-The same sentence, three engines. Press play:
+The same sentence, read by each engine in turn:
 
-**1. espeak-ng: what Linux uses out of the box**
+<!-- Video: media/comparison.mp4 from scripts/render_comparison.py. GitHub
+     plays only videos uploaded through its editor: drag the file onto this
+     line on github.com. -->
 
-<!-- Video: media/espeak.mp4 from scripts/make-samples.sh. GitHub plays
-     only videos uploaded through its editor: drag the file onto this line
-     on github.com. -->
+![Waveforms of the same sentence from espeak-ng, Piper and Kokoro](docs/samples/comparison.png)
 
-**2. Piper: the natural-tts system voice (Firefox Reader View, Foliate,
-Orca)**
-
-<!-- Video: media/piper.mp4 (drag onto this line on github.com). -->
-
-**3. Kokoro: the natural-tts read-anything hotkey**
-
-<!-- Video: media/kokoro.mp4 (drag onto this line on github.com). -->
-
-Audio only: [espeak-ng](docs/samples/espeak.mp3) ·
-[Piper](docs/samples/piper.mp3) · [Kokoro](docs/samples/kokoro.mp3)
+| | espeak-ng | Piper | Kokoro-82M |
+|---|---|---|---|
+| **Sound** | Robotic, formant synthesis | Natural, neural (VITS) | Most natural, neural (StyleTTS 2) |
+| **Role here** | Ubuntu's default, replaced | System voice via Speech Dispatcher | Read-anything hotkey |
+| **Used by** | Every Speech Dispatcher client | Firefox Reader View, Foliate, Orca | Any app with selectable text |
+| **Runs on** | Any CPU | Any CPU, faster than real time | CPU; NVIDIA GPU optional |
+| **Model size** | None | About 110 MB per voice | 82M parameters |
+| **License** | GPL-3.0 | GPL-3.0 engine; voice license varies | Apache-2.0 |
+| **Listen** | [espeak.mp3](docs/samples/espeak.mp3) | [piper.mp3](docs/samples/piper.mp3) | [kokoro.mp3](docs/samples/kokoro.mp3) |
 
 ## Quick start
 
