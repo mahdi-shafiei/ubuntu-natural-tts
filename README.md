@@ -120,8 +120,6 @@ Run the installer, then press a key:
 | Super+Alt+S | stop |
 ```
 
-<!-- media/structure-readme.mp4: drag onto the blank line below on github.com, then delete this comment. -->
-
 
 https://github.com/user-attachments/assets/96b9609a-6863-49bc-8433-bda4d9025f98
 
@@ -137,8 +135,6 @@ def get_user_name(users, idx):
     return users[idx].name
 ```
 
-<!-- media/structure-code.mp4: drag onto the blank line below on github.com, then delete this comment. -->
-
 
 https://github.com/user-attachments/assets/948609bc-0772-4764-8f97-f25dc3e93ca5
 
@@ -152,8 +148,6 @@ tags aloud:
 <p>Run <code>git add -A</code> at 37 °C, see Fig. 3.</p>
 <ol><li>mix the buffer</li><li>incubate for 2 h</li></ol>
 ```
-
-<!-- media/structure-html.mp4: drag onto the blank line below on github.com, then delete this comment. -->
 
 
 https://github.com/user-attachments/assets/41a6809b-6c8b-4a85-beda-5718b5203ff1
