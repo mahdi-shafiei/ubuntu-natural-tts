@@ -12,7 +12,7 @@ from __future__ import annotations
 import html
 import re
 from collections.abc import Iterator
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from html.parser import HTMLParser
 from typing import Any
 
@@ -309,6 +309,8 @@ def _markdown_blocks(window: str) -> Iterator[Block]:
                 "",
                 columns=tuple(table["columns"]),
                 rows=tuple(table["rows"]),
+                # A Markdown table's first column names the row.
+                row_headers=True,
             )
             table = None
         elif kind == "inline":
@@ -345,7 +347,7 @@ class _HtmlBlocks(HTMLParser):
         self._lists: list[int | None] = []
         self._item_index: int | None = None
         self._language: str | None = None
-        self._table: dict[str, Any] | None = None
+        self._table: _TableState | None = None
         self._math: dict[str, Any] | None = None
         self._tex_script: list[str] | None = None
 
@@ -441,19 +443,21 @@ class _HtmlBlocks(HTMLParser):
             self._text.append("\x00SUP")
         elif tag == "table":
             self._flush()
-            self._table = {
-                "columns": [],
-                "rows": [],
-                "cells": [],
-                "header": False,
-            }
+            self._table = _TableState()
+        elif tag == "caption" and self._table is not None:
+            self._text = []
+            self._table.in_caption = True
+        elif tag == "thead" and self._table is not None:
+            self._table.in_head = True
         elif tag == "tr" and self._table is not None:
-            self._table["cells"] = []
-            self._table["header"] = False
+            self._table.cells = []
         elif tag in {"th", "td"} and self._table is not None:
             self._text = []
-            if tag == "th":
-                self._table["header"] = True
+            self._table.cell = (
+                tag == "th",
+                _span(attributes.get("rowspan")),
+                _span(attributes.get("colspan")),
+            )
 
     def handle_startendtag(
         self, tag: str, attrs: list[tuple[str, str | None]]
@@ -511,26 +515,31 @@ class _HtmlBlocks(HTMLParser):
         elif tag == "sup":
             self._sup = max(0, self._sup - 1)
             self._close_sup()
+        elif tag == "caption" and self._table is not None:
+            caption = "".join(self._text)
+            self._table.caption = _WHITESPACE.sub(" ", caption).strip()
+            self._table.in_caption = False
+            self._text = []
+        elif tag == "thead" and self._table is not None:
+            self._table.in_head = False
         elif tag in {"th", "td"} and self._table is not None:
             raw = "".join(self._text)
             self._text = []
-            self._table["cells"].append(_WHITESPACE.sub(" ", raw).strip())
+            is_header, rowspan, colspan = self._table.cell
+            self._table.cells.append(
+                _Cell(
+                    _WHITESPACE.sub(" ", raw).strip(),
+                    is_header,
+                    rowspan,
+                    colspan,
+                )
+            )
         elif tag == "tr" and self._table is not None:
-            if self._table["header"] and not self._table["columns"]:
-                self._table["columns"] = self._table["cells"]
-            else:
-                self._table["rows"].append(tuple(self._table["cells"]))
+            self._table.close_row()
         elif tag == "table" and self._table is not None:
             table = self._table
             self._table = None
-            self.ready.append(
-                Block(
-                    Kind.TABLE,
-                    "",
-                    columns=tuple(table["columns"]),
-                    rows=tuple(table["rows"]),
-                )
-            )
+            self.ready.append(table.block())
 
     def handle_data(self, data: str) -> None:
         if self._math is not None:
@@ -576,6 +585,92 @@ class _HtmlBlocks(HTMLParser):
         """Finish parsing and flush whatever is still open."""
         super().close()
         self._flush()
+
+
+@dataclass
+class _Cell:
+    text: str
+    is_header: bool
+    rowspan: int
+    colspan: int
+
+
+def _span(value: str | None) -> int:
+    try:
+        return max(1, int(value or 1))
+    except ValueError:
+        return 1
+
+
+class _TableState:
+    """Collects one HTML table: header rows, body rows, spans and caption."""
+
+    def __init__(self) -> None:
+        self.caption = ""
+        self.in_caption = False
+        self.in_head = False
+        self.cells: list[_Cell] = []
+        self.cell = (False, 1, 1)
+        self.header_rows: list[list[str]] = []
+        self.rows: list[list[str]] = []
+        self.row_headers = False
+        # column index -> (text, rows still to cover) for open rowspans
+        self._pending: dict[int, tuple[str, int]] = {}
+
+    def close_row(self) -> None:
+        cells, self.cells = self.cells, []
+        if not cells and not self._pending:
+            return
+        row: list[str] = []
+        queue = list(cells)
+        column = 0
+        while queue or any(column == c for c in self._pending):
+            if column in self._pending:
+                text, left = self._pending[column]
+                row.append(text)
+                if left <= 1:
+                    del self._pending[column]
+                else:
+                    self._pending[column] = (text, left - 1)
+                column += 1
+                continue
+            if not queue:
+                break
+            cell = queue.pop(0)
+            for offset in range(cell.colspan):
+                row.append(cell.text)
+                if cell.rowspan > 1:
+                    self._pending[column + offset] = (
+                        cell.text,
+                        cell.rowspan - 1,
+                    )
+            column += cell.colspan
+        all_headers = all(c.is_header for c in cells)
+        if cells and all_headers and (self.in_head or not self.rows):
+            self.header_rows.append(row)
+        else:
+            if cells and cells[0].is_header:
+                self.row_headers = True
+            self.rows.append(row)
+
+    def block(self) -> Block:
+        width = max((len(r) for r in self.header_rows + self.rows), default=0)
+        columns = []
+        for index in range(width):
+            names: list[str] = []
+            for header in self.header_rows:
+                name = header[index] if index < len(header) else ""
+                if name and name not in names:
+                    names.append(name)
+            columns.append(", ".join(names))
+        return Block(
+            Kind.TABLE,
+            "",
+            columns=tuple(columns) if self.header_rows else (),
+            rows=tuple(tuple(r) for r in self.rows),
+            caption=self.caption,
+            row_headers=self.row_headers,
+        )
 
 
 def _language_class(value: str | None) -> str | None:

@@ -19,8 +19,10 @@ class Block:
         ordered_index: The item's number in an ordered list, else None.
         language: A code block's language as the document named it; a
             MATH block's source form: ``latex``, ``unicode`` or ``mathml``.
-        columns: Table header cells.
-        rows: Table body rows.
+        columns: Table header cells (two header rows joined as "Group, Name").
+        rows: Table body rows, spanning cells repeated in every cell they cover.
+        caption: The table's caption, or "".
+        row_headers: Whether the first cell of each row names the row.
     """
 
     kind: Kind
@@ -30,3 +32,5 @@ class Block:
     language: str | None = None
     columns: tuple[str, ...] = ()
     rows: tuple[tuple[str, ...], ...] = ()
+    caption: str = ""
+    row_headers: bool = False

@@ -352,3 +352,56 @@ class TestMathBlocks:
         assert kinds(out) == [Kind.PROSE, Kind.MATH, Kind.PROSE]
         assert out[1].language == "unicode" and out[1].text == "E = mc²"
         assert out[2].text == "where m is mass."
+
+
+class TestTables:
+    def test_caption_and_body_row_headers(self):
+        html = (
+            "<table><caption>Table 2. Results</caption>"
+            "<thead><tr><th>Sample</th><th>n</th></tr></thead>"
+            "<tbody><tr><th>Control</th><td>12</td></tr>"
+            "<tr><th>Treated</th><td></td></tr></tbody></table>"
+        )
+        (table,) = blocks(html, "text/html")
+        assert table.caption == "Table 2. Results"
+        assert table.columns == ("Sample", "n")
+        assert table.rows == (("Control", "12"), ("Treated", ""))
+        assert table.row_headers is True
+
+    def test_plain_html_table_has_no_row_headers(self):
+        html = (
+            "<table><tr><th>Name</th><th>Size</th></tr>"
+            "<tr><td>a</td><td>1</td></tr></table>"
+        )
+        (table,) = blocks(html, "text/html")
+        assert table.row_headers is False and table.caption == ""
+
+    def test_spanning_cells_repeat_their_value(self):
+        html = (
+            "<table><tr><th>A</th><th>B</th><th>C</th></tr>"
+            '<tr><td rowspan="2">x</td><td colspan="2">y</td></tr>'
+            "<tr><td>p</td><td>q</td></tr></table>"
+        )
+        (table,) = blocks(html, "text/html")
+        assert table.rows == (("x", "y", "y"), ("x", "p", "q"))
+
+    def test_two_header_rows_join_their_names(self):
+        html = (
+            "<table><thead>"
+            '<tr><th rowspan="2">Model</th><th colspan="2">Score</th></tr>'
+            "<tr><th>Dev</th><th>Test</th></tr></thead>"
+            "<tbody><tr><td>m1</td><td>1</td><td>2</td></tr></tbody></table>"
+        )
+        (table,) = blocks(html, "text/html")
+        assert table.columns == ("Model", "Score, Dev", "Score, Test")
+        assert table.rows == (("m1", "1", "2"),)
+
+    def test_markdown_tables_treat_the_first_column_as_the_row_heading(self):
+        md = (
+            "| Model | Params |\n|---|---|\n"
+            "| GPT-4o | 1.8T |\n| Llama | 70B |\n"
+        )
+        (table,) = blocks(md, None)
+        assert table.row_headers is True and table.caption == ""
+        assert table.columns == ("Model", "Params")
+        assert table.rows == (("GPT-4o", "1.8T"), ("Llama", "70B"))

@@ -51,6 +51,8 @@ PAUSES: dict[Kind, float] = {
     Kind.TABLE: 0.25,
 }
 RATES: dict[Kind, float] = {Kind.HEADING: 0.9, Kind.CODE: 0.9}
+# A table row ends with the longest pause of the three (header < value < row).
+TABLE_ROW_PAUSE = 0.75
 _INLINE_CODE = re.compile(r"`([^`\n]{1,500}+)`")
 
 Chunker = Callable[[str, str | None], Iterator[Segment]]
@@ -194,29 +196,47 @@ class _Reader:
             )
 
     def _table(self, block: Block) -> Iterator[Segment]:
-        columns = len(block.columns) or max(
-            (len(r) for r in block.rows), default=0
+        # Caption, shape, the column names once, one sentence per cell with
+        # its column name, the row heading bare, "blank" for an empty cell,
+        # and an explicit end; rows get the long pause.
+        pause = PAUSES[Kind.TABLE]
+        if block.caption:
+            yield Segment(self._words(block.caption), Kind.TABLE, pause)
+        width = max(len(block.columns), *(len(r) for r in block.rows), 0)
+        shape = "Table with {} and {}.".format(
+            _count(len(block.rows), "row"), _count(width, "column")
         )
-        shape = "table, {}, {}".format(
-            _count(columns, "column"), _count(len(block.rows), "row")
-        )
-        yield Segment(shape, kind=Kind.TABLE, pause_before=PAUSES[Kind.TABLE])
+        yield Segment(shape, kind=Kind.TABLE, pause_before=pause)
+        columns = block.columns + ("",) * (width - len(block.columns))
+        if block.columns:
+            names = ", ".join(c for c in block.columns if c)
+            yield Segment(self._words(f"Columns: {names}."), Kind.TABLE, pause)
         for row in block.rows:
-            cells = [
-                f"{name}: {cell}" if name else cell
-                for name, cell in zip(
-                    block.columns + ("",) * len(row), row, strict=False
-                )
-            ]
-            words = self._words(", ".join(c for c in cells if c))
-            if words:
-                yield Segment(
-                    words, kind=Kind.TABLE, pause_before=PAUSES[Kind.TABLE]
-                )
+            yield Segment(
+                self._words(_row_sentences(columns, row, block.row_headers)),
+                kind=Kind.TABLE,
+                pause_before=TABLE_ROW_PAUSE,
+            )
+        yield Segment("End of table.", Kind.TABLE, TABLE_ROW_PAUSE)
+
+
+def _row_sentences(
+    columns: tuple[str, ...], row: tuple[str, ...], row_headers: bool
+) -> str:
+    cells = list(row) + [""] * (len(columns) - len(row))
+    parts: list[str] = []
+    start = 0
+    if row_headers:
+        parts.append(f"{cells[0] or 'blank'}.")
+        start = 1
+    for name, cell in zip(columns[start:], cells[start:], strict=False):
+        value = cell or "blank"
+        parts.append(f"{name}: {value}." if name else f"{value}.")
+    return " ".join(parts)
 
 
 def _count(n: int, noun: str) -> str:
-    return f"{cardinal(n)} {noun}{'' if n == 1 else 's'}"
+    return f"{n} {noun}{'' if n == 1 else 's'}"
 
 
 def prepare(

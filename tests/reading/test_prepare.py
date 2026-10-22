@@ -165,14 +165,38 @@ class TestStructure:
         ]
         assert code[0].text.startswith("def f left paren x right paren colon.")
 
-    def test_tables_announce_their_shape_then_rows(self, tmp_path):
+    def test_tables_are_read_caption_shape_columns_rows_end(self, tmp_path):
         out = list(prepare(HTML, make_settings(tmp_path), HTML_FORMAT))
         table = [s for s in out if s.kind is Kind.TABLE]
         assert [s.text for s in table] == [
-            "table, two columns, one row",
-            "Name: a, Size: five millimeters",
+            "Table with 1 row and 2 columns.",
+            "Columns: Name, Size.",
+            "Name: a. Size: five millimeters.",
+            "End of table.",
         ]
-        assert all(s.pause_before == 0.25 for s in table)
+        assert [s.pause_before for s in table] == [0.25, 0.25, 0.75, 0.75]
+
+    def test_table_caption_row_headings_and_blank_cells(self, tmp_path):
+        html = (
+            "<table><caption>Table 2. Results</caption>"
+            "<thead><tr><th>Sample</th><th>n</th><th>Mean</th></tr></thead>"
+            "<tbody><tr><th>Control</th><td>12</td><td>3.1</td></tr>"
+            "<tr><th>Total</th><td>23</td><td></td></tr></tbody></table>"
+        )
+        out = texts(prepare(html, make_settings(tmp_path), HTML_FORMAT))
+        assert out == [
+            "Table two. Results",
+            "Table with 2 rows and 3 columns.",
+            "Columns: Sample, n, Mean.",
+            "Control. n: twelve. Mean: three point one.",
+            "Total. n: twenty-three. Mean: blank.",
+            "End of table.",
+        ]
+
+    def test_markdown_table_first_column_is_the_row_heading(self, tmp_path):
+        md = "| Model | Params |\n|---|---|\n| Llama | 70B |\n"
+        out = texts(prepare(md, make_settings(tmp_path)))
+        assert out[2:4] == ["Llama. Params: 70B.", "End of table."]
 
     def test_markdown_in_plain_text_is_structured_too(self, tmp_path):
         text = "# Title\n\nSome prose.\n\n```sh\nls -la\n```\n"
