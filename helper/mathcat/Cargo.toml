@@ -1,6 +1,6 @@
 [package]
 name = "natural-tts-mathcat"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 license = "MIT"
 description = "Speaks MathML for natural-tts: one expression per line in, one SSML line out (MathCAT)."

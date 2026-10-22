@@ -239,10 +239,15 @@ If something stays silent, run `natural-tts doctor`.
   is pronounced correctly, and `[12]` citation markers are skipped. Add
   your own pronunciations in `~/.config/natural-tts/lexicon.toml`.
 - **Reads structure and code.** Headings, lists, quotes and tables get
-  their own pauses; code blocks in Markdown, HTML, reStructuredText,
-  LaTeX, Org, AsciiDoc, prompts and diffs are read as words
-  (`get_user_name(x)` is "get user name x"), with `code_level` choosing
-  how much punctuation you hear.
+  their own pauses; a table is read caption first, then each row as
+  "Heading. Column: value." sentences; code blocks in Markdown, HTML,
+  reStructuredText, LaTeX, Org, AsciiDoc, prompts and diffs are read as
+  words (`get_user_name(x)` is "get user name x"), with `code_level`
+  choosing how much punctuation you hear.
+- **Reads names and initialisms.** LinkedIn, PyTorch and OpenAI are left
+  to the engine, which reads them whole; ODE, DNA and GPUs are spelled as
+  one smooth word; IEEE is "I triple E"; a heading in capitals is read as
+  words. Names the engine gets wrong go in your lexicon file.
 - **Reads math.** LaTeX (`$…$`, `$$…$$`, equation environments), Unicode
   formulas and MathML on web pages are spoken the way a math teacher
   reads them, through [MathCAT](https://nsoiffer.github.io/MathCAT/):
@@ -395,7 +400,9 @@ Each failing check prints the command that fixes it. Common cases:
 | Hotkeys gone from Settings > Keyboard | `doctor` reports them missing; `natural-tts setup` adds them back without touching anything else. Before 0.4.1, running the project's own test suite on a desktop session removed every custom shortcut (the integration test now runs on a private D-Bus session). |
 | "daemon is not running or still starting" right after an upgrade | `setup` restarts the daemon and the old socket file lingers for a few seconds. Wait for `natural-tts ready` in `journalctl --user -u natural-tts-kokoro.service`, then try again. |
 | A number, unit, date or abbreviation is read in a way you do not want | The reading rules are plain code in `src/natural_tts/reading/`; `reading.enabled = false` in `settings.toml` restores the raw reading, and `reading.citations = "read"` says citation markers. Open an issue with the sentence and what you expected. |
-| A name or term is mispronounced | Add it to `~/.config/natural-tts/lexicon.toml` (see [Configuration](#configuration)) and run `natural-tts apply`. |
+| A name or term is mispronounced | Add it to `~/.config/natural-tts/lexicon.toml` (see [Configuration](#configuration)) and run `natural-tts apply`. Company and product names are read by the engine as written, so an entry with `match = "exact"` and the phonemes (or `words`) fixes one name without touching others. |
+| A company name is spelled letter by letter, or an acronym is read as a word | Four-letter-and-longer capital runs are the engine's call: it spells what it does not know (TSMC, ASML) and reads the words it knows (NASA, COVID). Add an entry with `words` or phonemes for the exceptions (`SUSE`, `WHOOP` are packaged). Two- and three-letter runs are always spelled unless listed as words. |
+| A table is read cell by cell with its headers and you would rather hear less | Every cell is read as "Column: value." so that long and wide tables stay followable; the caption and the shape come first and "End of table" closes it. There is no setting to shorten it yet; open an issue with the table. |
 | Code is read with too much or too little punctuation | `reading.code_level` is 1 (operators only), 2 (adds brackets, separators and indentation) or 3 (every symbol). |
 | A web page's headings and lists are read as one paragraph | Only Firefox puts the selection's HTML on the clipboard; Chromium-based browsers hand over plain text, so structure is recognised there only from Markdown markers. Copying with <kbd>Ctrl</kbd>+<kbd>C</kbd> and pressing <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> can help, since the copy clipboard often carries HTML. |
 | A formula is read as a jumble of words, or `doctor` says the Math helper is missing | `natural-tts apply` downloads the release's MathCAT helper (`~/.local/share/natural-tts/bin/natural-tts-mathcat`). Offline, or on a platform without a binary, build it: `natural-tts setup --helper-source /path/to/clone/helper/mathcat` (needs `cargo`). Until then formulas are read as words. |
@@ -480,6 +487,29 @@ A 5 MB program, `natural-tts-mathcat`, built from the MathCAT Rust crate
 with its speech rules embedded, started once by the daemon and kept
 running. `setup` downloads it from this project's release for your
 architecture and checks its SHA-256; `doctor` shows its version.
+
+**How are company names, product names and acronyms read?**
+As the speech engine reads them, since 0.5.0. Camel-case names (LinkedIn,
+GitHub, PyTorch, OpenAI) and mixed tokens (mRNA, HbA1c, p53) go to the
+engine whole; it looks the cased spelling up, splits what it does not
+know and reads each half, so no list of brands is needed. Two- and
+three-letter capital runs (ODE, DNA, GPU, US) are spelled as one word
+with the stress on the last letter, the engine's own convention; longer
+runs are the engine's: it spells what it does not know and says the
+acronyms it knows as words (NASA, COVID, CRISPR). Mixed readings need an
+entry: IEEE ("I triple E") and nineteen company names the engine misread
+are packaged, and your `~/.config/natural-tts/lexicon.toml` takes the
+rest. SQL stays "sequel". A sentence or heading written in capitals is
+read as words.
+
+**How are tables read?**
+Caption first, then "Table with 3 rows and 3 columns", the column names
+once, each row as "Row heading. Column: value. Column: value." with
+"blank" for an empty cell, and "End of table". Rows get a longer pause
+than cells. This follows the one published listening study of spoken
+tables (header-value pairs with a pause hierarchy) and what NVDA reads in
+say-all mode; two-row headers are joined ("Score, Dev"), spanning cells
+repeat their value, and a Markdown table's first column names the row.
 
 **Can I skip citation markers like [12] or (Smith et al., 2019)?**
 They are skipped by default; `reading.citations = "read"` says them.

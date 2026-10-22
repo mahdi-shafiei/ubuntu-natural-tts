@@ -6,6 +6,33 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-22
+
+### Added
+
+- Company and product names are read the way the engine reads them:
+  LinkedIn, GitHub, PyTorch, NumPy and OpenAI are no longer split and
+  spelled ("Linked I n", "P y Torch"). Nineteen names the engine still
+  misread (Xiaomi, Huawei, Jupyter, Qt, Keras, Shein, Airbnb, SUSE, …) and
+  IEEE ("I triple E") come from the packaged lexicon.
+- Two- and three-letter initialisms (ODE, PDE, DNA, US, SEM), their plurals
+  and possessives, dotted ones (U.S., Ph.D.) and the letters of chemical
+  formulas are spoken as one word with the stress on the last letter, the
+  engine's own convention, instead of three separate stressed letters.
+- A heading or sentence written in capitals is read as words, not spelled.
+- Alphanumeric codes read the capital run and short digit groups as
+  numbers (GPT-4o is "G P T four o"); Roman numerals after Chapter,
+  Section, Part and similar words are read as numbers; `.NET` is "dot net";
+  `70B` and `3.5M` keep their letter, while `$18.5M` is "eighteen point five
+  million dollars".
+- Tables are read as their caption, "Table with N rows and M columns", the
+  column names once, each row as "Heading. Column: value." sentences with
+  "blank" for empty cells, and "End of table"; rows get a longer pause.
+  HTML captions, two-row headers, spanning cells and row headers are
+  understood; a Markdown table's first column names the row.
+- `doctor` checks that the engine's espeak fallback imports, since
+  camel-case names depend on it.
+
 ### Fixed
 
 - The gsettings integration test ran on the developer's own D-Bus session
