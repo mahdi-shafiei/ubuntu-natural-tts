@@ -93,7 +93,7 @@ mail me at a.b@example.com	mail me at a dot b at example dot com	email
 (Smith et al., 2019; Doe and Roe, 2020) found it	found it	citation skipped
 Smith (2020) found it [1, 2] and [3-5].	Smith (twenty twenty) found it and.	citation skipped
 results² were	results were	footnote skipped
-[the docs](/docs/) and [x](y)	[the docs] (/docs/) and [x] (y)	link broken
+[the docs](/docs/) and [x](y) and a stray ](	the docs and x and a stray ] (	links read as their text; leftover pair broken
 # --- untouched prose
 Linux can finally read to you in a natural voice.	Linux can finally read to you in a natural voice.	plain
 well-known, re-run, e-mail, p-value	well-known, re-run, e-mail, p-value	plain

@@ -75,9 +75,16 @@ def _spell(letters: str) -> str:
 # -- links, URLs, e-mail ----------------------------------------------------
 
 
+@_sub(r"\[([^\[\]\n]{1,200}+)\]\([^()\s]{1,2000}+\)")
+def _markdown_links(m: re.Match[str], _: Options) -> str:
+    # A Markdown link reads as its text; misaki would otherwise take
+    # [text](target) for pronunciation markup and drop the words.
+    return m.group(1)
+
+
 @_sub(r"\]\(")
 def _break_links(m: re.Match[str], _: Options) -> str:
-    # misaki reads [text](target) as pronunciation markup; a space breaks it.
+    # Any leftover "](" pair is broken so misaki cannot misread it.
     return "] ("
 
 
@@ -572,6 +579,7 @@ def _tidy(text: str, _: Options) -> str:
 
 
 RULES: tuple[Rule, ...] = (
+    _markdown_links,
     _break_links,
     _url,
     _email,

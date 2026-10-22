@@ -67,6 +67,11 @@ If something stays silent, run `natural-tts doctor`.
   clipboard, or any program that speaks through Speech Dispatcher.
 - **Reads PDFs properly.** Words hyphenated across line breaks are
   re-joined and hard wraps removed before speaking.
+- **Reads like a person.** Numbers, dates, units, abbreviations and
+  symbols are spoken as words on the hotkey path: `p < 0.05` is "p is
+  less than zero point zero five", `Fig. 3` is "Figure three", `E. coli`
+  is pronounced correctly, and `[12]` citation markers are skipped. Add
+  your own pronunciations in `~/.config/natural-tts/lexicon.toml`.
 - **Fast start, instant stop.** Speech starts after the first short chunk;
   stop takes effect within about a tenth of a second.
 - **Self-healing.** Audio-device or synthesis errors are logged and
@@ -129,6 +134,22 @@ citations = "skip"             # or "read": citation markers such as [12]
 
 Run `natural-tts apply` after editing. A new Piper voice is downloaded
 automatically.
+
+Pronunciations the engine gets wrong go in
+`~/.config/natural-tts/lexicon.toml`, which is merged over the built-in
+list on the next `apply`. Phonemes use Kokoro's alphabet (`A` = ay,
+`I` = eye, `O` = oh; `ˈ` marks stress):
+
+```toml
+[[entry]]
+head = "Zymomonas"
+misaki = "zˌImOmˈOnəs"
+
+[[entry]]
+head = "ACS"          # said as a word, not spelled
+match = "exact"
+misaki = "ˈæks"
+```
 
 ### Voices
 

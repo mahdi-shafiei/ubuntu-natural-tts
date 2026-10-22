@@ -6,6 +6,29 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Content-aware reading on the Kokoro hotkey path (`[reading]` in
+  `settings.toml`, on by default for English voices): numbers, dates,
+  times, versions, currency, units with SI prefixes, ranges, scientific
+  notation, scholarly and general abbreviations (`Fig. 3` is "Figure
+  three", `et al.` stays "et al", `St. Louis` is "Saint Louis"), math
+  symbols and Greek letters, chemical formulas and gene-style tokens are
+  spoken as words; URLs read as their domain and path; citation markers
+  such as `[12]` are skipped (`citations = "read"` says them). Markdown
+  links no longer vanish into Kokoro's pronunciation syntax.
+- A pronunciation lexicon for species names, Latin phrases and gene or
+  method names (`E. coli`, `in vitro`, `Cas9`), with a user file at
+  `~/.config/natural-tts/lexicon.toml` merged on top.
+- Segments: the engine speaks typed segments with their own pause, speed
+  and voice, prepared lazily so a long selection starts as fast as a
+  short one.
+
+### Changed
+
+- `natural-tts setup` writes booleans as TOML literals in the settings
+  template.
+
 ## [0.1.2] - 2026-10-21
 
 ### Fixed
