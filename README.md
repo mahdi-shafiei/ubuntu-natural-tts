@@ -193,6 +193,8 @@ speed = 1.0                    # 0.5 .. 2.0
 enabled = true                 # speak numbers, units, abbreviations and
                                # symbols as words (English voices only)
 citations = "skip"             # or "read": citation markers such as [12]
+code_level = 1                 # code blocks: 1 operators, 2 adds brackets
+                               # and indentation, 3 every symbol
 ```
 
 Run `natural-tts apply` after editing. A new Piper voice is downloaded

@@ -34,11 +34,16 @@ class TestPrepare:
         )
         assert texts(prepare(TEXT, settings)) == texts(plain_chunker(TEXT))
 
-    def test_non_english_voice_is_left_alone(self, tmp_path):
+    def test_non_english_voice_keeps_todays_words(self, tmp_path):
+        # Structure (segments, pauses, code reading) applies to every
+        # voice; the English word rules and lexicon do not. So the words
+        # are exactly today's words, even if the segmentation differs.
         settings = replace(
             make_settings(tmp_path), kokoro=KokoroSettings(voice="ef_dora")
         )
-        assert texts(prepare(TEXT, settings)) == texts(plain_chunker(TEXT))
+        words = " ".join(texts(prepare(TEXT, settings))).split()
+        assert words == " ".join(texts(plain_chunker(TEXT))).split()
+        assert "[E. coli]" not in " ".join(texts(prepare(TEXT, settings)))
 
     def test_british_voice_reads_dates_day_first(self, tmp_path):
         settings = replace(

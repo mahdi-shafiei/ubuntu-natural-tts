@@ -74,6 +74,7 @@ class TestLoadSettings:
         # markers, the content-aware plan's defaults (decisions.md).
         assert ReadingSettings().enabled is True
         assert ReadingSettings().citations == "skip"
+        assert ReadingSettings().code_level == 1
         assert Settings(paths=make_paths(Path("/x"))).reading == (
             ReadingSettings()
         )
@@ -122,6 +123,18 @@ class TestLoadSettings:
             (
                 "[reading]\ncitations = 'drop'\n",
                 "reading.citations must be 'skip' or 'read'",
+            ),
+            (
+                "[reading]\ncode_level = 0\n",
+                "reading.code_level must be in 1..3",
+            ),
+            (
+                "[reading]\ncode_level = 4\n",
+                "reading.code_level must be in 1..3",
+            ),
+            (
+                "[reading]\ncode_level = true\n",
+                "reading.code_level must be int",
             ),
             ("[kokoro]\nvoice = 'heart'\n", "kokoro.voice 'heart'"),
             ("[kokoro]\nvoice = 'xf_heart'\n", "kokoro.voice 'xf_heart'"),
