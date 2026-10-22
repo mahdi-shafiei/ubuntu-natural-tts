@@ -14,7 +14,7 @@ from natural_tts.config import (
 )
 from natural_tts.hotkeys import MEDIA_KEYS_SCHEMA
 from natural_tts.ipc import STOP_MESSAGE, DaemonNotRunningError
-from natural_tts.selection import Source
+from natural_tts.selection import Selection, Source
 from natural_tts.system import Result
 from tests.fakes import LocalHTTPServer, RecordingRunner, make_settings
 
@@ -30,8 +30,8 @@ class World:
         self.sent: list[str] = []
         self.daemon_up = True
         self.selection = {
-            Source.SELECTION: "highlighted",
-            Source.CLIPBOARD: "copied",
+            Source.SELECTION: Selection("highlighted"),
+            Source.CLIPBOARD: Selection("copied"),
         }
         self.execs: list[tuple[str, list[str]]] = []
         self.daemons: list[object] = []
@@ -93,7 +93,7 @@ class TestReadAloud:
         assert world.sent == ["copied"]
 
     def test_nothing_selected_is_silent(self, world):
-        world.selection[Source.SELECTION] = ""
+        world.selection[Source.SELECTION] = Selection("")
         assert world.run("read", "selection") == 0
         assert world.sent == []
 

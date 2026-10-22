@@ -25,7 +25,7 @@ from natural_tts.config import (
     load_settings,
 )
 from natural_tts.ipc import STOP_MESSAGE, DaemonNotRunningError, send_message
-from natural_tts.selection import Source, read_text
+from natural_tts.selection import Selection, Source, read_selection
 from natural_tts.system import Runner, run
 from natural_tts.systemd import SystemdError
 from natural_tts.text import decode_text
@@ -62,7 +62,7 @@ class Env:
     stdout: TextIO = field(default_factory=lambda: sys.stdout)
     stderr: TextIO = field(default_factory=lambda: sys.stderr)
     send: Callable[[Path, str], None] = send_message
-    read: Callable[[Source, Runner], str] = read_text
+    read: Callable[[Source, Runner], Selection] = read_selection
     execv: Callable[[str, Sequence[str]], object] = _execv
     run_daemon: Callable[[Settings], object] = _run_kokoro_daemon
     speechd_system_conf: Path = SYSTEM_SPEECHD_CONF
@@ -91,9 +91,9 @@ def _send(env: Env, settings: Settings, message: str) -> None:
 
 def cmd_read(args: argparse.Namespace, env: Env, settings: Settings) -> int:
     """Read the highlighted text or the clipboard aloud."""
-    text = env.read(Source(args.source), env.runner)
-    if text.strip():
-        _send(env, settings, text)
+    selection = env.read(Source(args.source), env.runner)
+    if selection.text.strip():
+        _send(env, settings, selection.text)
     return 0
 
 
