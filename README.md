@@ -154,6 +154,54 @@ https://github.com/user-attachments/assets/41a6809b-6c8b-4a85-beda-5718b5203ff1
 
 
 
+### Math
+
+Since 0.4.0 formulas are spoken by MathCAT. Each clip plays the same
+selection twice: as 0.3.0 read it (LaTeX read as words), then as 0.4.0
+reads it. Green ticks mark segment boundaries.
+
+**Inline formulas in a sentence**, as a paper source carries them:
+
+```latex
+We model the posterior as $P(\theta \mid D) = \frac{P(D \mid \theta)\, P(\theta)}{P(D)}$
+and fit $\hat{y} = \beta_0 + \beta_1 x$, which is significant at $p < 0.05$.
+```
+
+
+https://github.com/user-attachments/assets/88efb6a4-6564-43b6-b853-96e2169632ee
+
+
+
+**A display formula** between paragraphs, with MathCAT's own pauses:
+
+```latex
+The Gaussian integral
+
+$$\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}$$
+
+follows from polar coordinates.
+```
+
+
+https://github.com/user-attachments/assets/bac34e82-d57f-4c80-a253-c441b13ae0b1
+
+
+
+**A formula line from a PDF**, in plain Unicode:
+
+```text
+Energy is given by
+
+E = mc²
+
+where m is the mass, and x² + y² = r² describes a circle.
+```
+
+
+https://github.com/user-attachments/assets/3aca0af4-e711-4c56-b03f-40c01981a542
+
+
+
 ## Quick start
 
 ```bash
