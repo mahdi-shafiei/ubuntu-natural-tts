@@ -4,7 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from natural_tts.reading.mathcat import MathCat, MathCatUnavailable, parse_ssml
+from natural_tts.reading.mathcat import (
+    MathCat,
+    MathCatUnavailable,
+    parse_ssml,
+    sentence,
+)
 
 FAKE = Path(__file__).with_name("fake_mathcat.py")
 FRACTION = "<math><mfrac><mi>a</mi><mi>b</mi></mfrac></math>"
@@ -86,3 +91,22 @@ class TestClient:
         process = c.process
         c.close()
         assert process is not None and process.poll() is not None
+
+
+class TestSentence:
+    def test_breaks_become_punctuation_by_length(self):
+        pieces = [
+            (0.0, "the integral from 0"),
+            (0.128, "to 1 of"),
+            (0.256, "f of x d x"),
+            (0.4, "is equal to"),
+            (0.8, "one"),
+        ]
+        assert (
+            sentence(pieces)
+            == "the integral from 0 to 1 of, f of x d x. is equal to. one"
+        )
+
+    def test_single_piece_and_empty(self):
+        assert sentence([(0.0, "x")]) == "x"
+        assert sentence([]) == ""

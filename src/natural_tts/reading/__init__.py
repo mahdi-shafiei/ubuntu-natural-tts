@@ -28,11 +28,10 @@ from natural_tts.reading.formulas import (
     Formulas,
     fallback_text,
     formulas_for,
-    inline_words,
 )
 from natural_tts.reading.lexicon import Lexicon, load_lexicon, packaged_lexicon
 from natural_tts.reading.math import find_math_spans
-from natural_tts.reading.mathcat import MathCat
+from natural_tts.reading.mathcat import MathCat, sentence
 from natural_tts.reading.normalize import normalize_words
 from natural_tts.reading.numbers import cardinal
 from natural_tts.reading.protected import protect, unprotect
@@ -131,7 +130,8 @@ class _Reader:
         last = 0
         for span in spans:
             out.append(text[last : span.start])
-            words = inline_words(self._math_pieces(span.latex, LATEX))
+            pieces = self._math_pieces(span.latex, LATEX)
+            words = sentence(pieces, inline=True)
             if words:
                 out.append(protect(words))
             last = span.end
@@ -139,12 +139,11 @@ class _Reader:
         return "".join(out)
 
     def _math(self, block: Block) -> Iterator[Segment]:
-        pause = PAUSES[Kind.MATH]
-        for piece_pause, words in self._math_pieces(block.text, block.language):
-            yield Segment(
-                words, kind=Kind.MATH, pause_before=max(pause, piece_pause)
-            )
-            pause = 0.0
+        # One engine call per formula: the helper's breaks become
+        # punctuation (see ``mathcat.sentence``).
+        words = sentence(self._math_pieces(block.text, block.language))
+        if words:
+            yield Segment(words, kind=Kind.MATH, pause_before=PAUSES[Kind.MATH])
 
     def _prose(self, block: Block) -> Iterator[Segment]:
         # Inline code first: its words carry no "$", so a formula inside a

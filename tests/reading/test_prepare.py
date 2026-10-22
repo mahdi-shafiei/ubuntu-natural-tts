@@ -196,7 +196,7 @@ class TestStructure:
     def test_markdown_table_first_column_is_the_row_heading(self, tmp_path):
         md = "| Model | Params |\n|---|---|\n| Llama | 70B |\n"
         out = texts(prepare(md, make_settings(tmp_path)))
-        assert out[2:4] == ["Llama. Params: 70B.", "End of table."]
+        assert out[2:4] == ["Llama. Params: seventy billion.", "End of table."]
 
     def test_markdown_in_plain_text_is_structured_too(self, tmp_path):
         text = "# Title\n\nSome prose.\n\n```sh\nls -la\n```\n"
@@ -264,18 +264,20 @@ def fake_helper(tmp_path):
 
 
 class TestMath:
-    def test_display_math_becomes_math_segments_with_mathcats_pauses(
+    def test_display_math_is_one_segment_with_breaks_as_punctuation(
         self, tmp_path, fake_helper
     ):
+        # The fake helper emits a 128 ms break, then a 400 ms break: short
+        # breaks vanish, medium ones become commas, long ones full stops,
+        # so the formula is one engine call (each call adds its own ~0.3 s
+        # of leading silence, which made seven pieces sound choppy).
         text = "Before.\n\n$$\\frac{a}{b}$$\n\nAfter."
         out = list(prepare(text, make_settings(tmp_path)))
         math = [s for s in out if s.kind is Kind.MATH]
         assert [s.text for s in math] == [
-            "[ClearSpeak Medium] cap A. over",
-            "b",
-            "end",
+            "[ClearSpeak Medium] cap A. over b. end"
         ]
-        assert [s.pause_before for s in math] == [0.25, 0.128, 0.4]
+        assert [s.pause_before for s in math] == [0.25]
 
     def test_inline_math_is_spoken_inside_the_sentence(
         self, tmp_path, fake_helper
@@ -283,7 +285,7 @@ class TestMath:
         (out,) = texts(
             prepare("where $x^2 + y^2 = r^2$ holds.", make_settings(tmp_path))
         )
-        assert out == "where [ClearSpeak Medium] cap A. over, b, end holds."
+        assert out == "where [ClearSpeak Medium] cap A. over b, end holds."
 
     def test_simplespeak_and_verbose_for_deep_nesting(
         self, tmp_path, fake_helper

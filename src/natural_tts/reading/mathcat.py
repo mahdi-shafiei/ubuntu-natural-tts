@@ -54,6 +54,32 @@ def parse_ssml(ssml: str) -> list[tuple[float, str]]:
     return pieces or [(0.0, "")] if not ssml.strip() else pieces
 
 
+# MathCAT's break tiers are 200/400/800 ms. Inside one engine call a short
+# break is nothing, a medium one a comma and a long one a full stop; a
+# separate call per piece would add the engine's own leading silence.
+SHORT_BREAK = 0.2
+LONG_BREAK = 0.4
+
+
+def sentence(pieces: list[tuple[float, str]], *, inline: bool = False) -> str:
+    """Join spoken pieces into one sentence, breaks rendered as punctuation.
+
+    ``inline`` spans sit inside a prose sentence, so a long break becomes a
+    comma there rather than a full stop.
+    """
+    words = ""
+    for pause, piece in pieces:
+        if not words:
+            words = piece
+        elif pause >= LONG_BREAK and not inline:
+            words += ". " + piece
+        elif pause >= SHORT_BREAK:
+            words += ", " + piece
+        else:
+            words += " " + piece
+    return words
+
+
 def _unit_is_ms(ssml: str, number: str) -> bool:
     match = re.search(rf"<break\s+time='{re.escape(number)}(ms|s)'", ssml)
     return match is None or match.group(1) == "ms"

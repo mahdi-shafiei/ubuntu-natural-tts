@@ -1,55 +1,55 @@
 # source	language	style	expected
-# Recorded from natural-tts-mathcat 0.4.0 (MathCAT 0.7.7 rules) through
-# Formulas.speak + inline_words; "fallback" = left to the word rules.
+# Recorded from natural-tts-mathcat (MathCAT 0.7.7 rules) through
+# Formulas.speak + mathcat.sentence(inline=True); "fallback" = left to the word rules.
 2 + 3 = 5	latex	clearspeak	2 plus 3 is equal to 5
-x^2 + y^2 = r^2	latex	clearspeak	x squared plus y squared, is equal to r squared
+x^2 + y^2 = r^2	latex	clearspeak	x squared plus y squared is equal to r squared
 a_1 + a_2 + \cdots + a_n	latex	clearspeak	a sub 1, plus a sub 2, plus dot dot dot plus a sub n
 \frac{a}{b}	latex	clearspeak	a over b
 \frac{x + 1}{x - 1}	latex	clearspeak	the fraction with numerator, x plus 1, and denominator x minus 1
 \frac{1}{1 + \frac{1}{x}}	latex	clearspeak	the fraction with numerator 1, and denominator 1 plus 1 over x, end fraction, end fraction
 \sqrt{2}	latex	clearspeak	the square root of 2
 \sqrt{b^2 - 4ac}	latex	clearspeak	the square root of b squared minus 4 a c, end root
-x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}	latex	clearspeak	x is equal to, the fraction with numerator, negative b plus or minus, the square root of b squared minus 4 a c, end root, and denominator 2 a, end fraction
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}	latex	clearspeak	x is equal to, the fraction with numerator, negative b plus or minus the square root of b squared minus 4 a c, end root, and denominator 2 a, end fraction
 \sqrt[3]{x}	latex	clearspeak	the cube root of x
-e^{i\pi} + 1 = 0	latex	clearspeak	e raised to the i pi power, plus 1, is equal to 0
+e^{i\pi} + 1 = 0	latex	clearspeak	e raised to the i pi power plus 1 is equal to 0
 \sum_{i=1}^{n} i = \frac{n(n+1)}{2}	latex	clearspeak	the sum from i is equal to 1, to n of i, is equal to, the fraction with numerator, n times open paren n plus 1 close paren, and denominator 2
 \prod_{k=1}^{n} k = n!	latex	clearspeak	the product from k is equal to 1, to n of k, is equal to n factorial
-\int_0^1 f(x)\,dx	latex	clearspeak	the integral from 0, to 1 of, f of x d x
-\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}	latex	clearspeak	the integral from negative infinity, to infinity of, e raised to the negative x squared power, d x, is equal to, the square root of pi, end root
+\int_0^1 f(x)\,dx	latex	clearspeak	the integral from 0, to 1 of f of x d x
+\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}	latex	clearspeak	the integral from negative infinity, to infinity of, e raised to the negative x squared power d x, is equal to the square root of pi, end root
 \lim_{x \to 0} \frac{\sin x}{x} = 1	latex	clearspeak	the limit as x approaches 0, of sine x over x, is equal to 1
 \frac{dy}{dx}	latex	clearspeak	d y over d x
 \frac{\partial f}{\partial x}	latex	clearspeak	the fraction with numerator, partial derivative f, and denominator partial derivative x
 f'(x) = 2x	latex	clearspeak	f prime, of x is equal to 2 x
 \alpha + \beta = \gamma	latex	clearspeak	alpha plus beta is equal to gamma
-\sin^2 \theta + \cos^2 \theta = 1	latex	clearspeak	sine squared of theta, plus cosine squared of theta, is equal to 1
-\log_2 8 = 3	latex	clearspeak	the log base 2, of 8, is equal to 3
+\sin^2 \theta + \cos^2 \theta = 1	latex	clearspeak	sine squared of theta plus cosine squared of theta, is equal to 1
+\log_2 8 = 3	latex	clearspeak	the log base 2, of 8 is equal to 3
 \ln x	latex	clearspeak	natural log of x
 x \le 3	latex	clearspeak	x is less than or equal to 3
 0 < \epsilon < 1	latex	clearspeak	0 is less than epsilon is less than 1
 a \ne b	latex	clearspeak	a is not equal to b
-x \approx 3.14	latex	clearspeak	x is approximately equal to, 3.14
-P(A \mid B) = \frac{P(B \mid A) P(A)}{P(B)}	latex	clearspeak	cap p open paren cap a given cap b, close paren, is equal to, the fraction with numerator, cap p open paren cap b given cap a, close paren, times cap p of cap a, and denominator cap p of cap b
-E[X] = \sum_x x\,p(x)	latex	clearspeak	cap e of cap x is equal to, the sum over x of, x p of x
-\{x \mid x > 2\}	latex	clearspeak	open brace, x divides x is greater than 2, close brace
+x \approx 3.14	latex	clearspeak	x is approximately equal to 3.14
+P(A \mid B) = \frac{P(B \mid A) P(A)}{P(B)}	latex	clearspeak	cap p open paren cap a given cap b close paren, is equal to, the fraction with numerator, cap p open paren cap b given cap a close paren, times cap p of cap a, and denominator cap p of cap b
+E[X] = \sum_x x\,p(x)	latex	clearspeak	cap e of cap x is equal to the sum over x of x p of x
+\{x \mid x > 2\}	latex	clearspeak	open brace x divides x is greater than 2 close brace
 x \in \mathbb{R}	latex	clearspeak	x is a member of the real numbers
 \mathbb{R}^n	latex	clearspeak	the real numbers to the n -th power
-\forall x \exists y : y > x	latex	clearspeak	for all x there exists y, colon y is greater than x
+\forall x \exists y : y > x	latex	clearspeak	for all x there exists y colon y is greater than x
 A \cup B	latex	clearspeak	cap a union cap b
-A \cap B = \emptyset	latex	clearspeak	cap a intersection cap b, is equal to empty set
+A \cap B = \emptyset	latex	clearspeak	cap a intersection cap b is equal to empty set
 |x|	latex	clearspeak	the absolute value of x
 \|v\|	latex	clearspeak	magnitude of v
 \vec{v} \cdot \vec{w}	latex	clearspeak	vector v, dot product vector w
 \binom{n}{k}	latex	clearspeak	n choose k
 \begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}	latex	clearspeak	the 2 by 2 matrix, row 1, 1, 2, row 2, 3, 4
-f(x) = \begin{cases} 1 & x > 0 \\ 0 & \text{otherwise} \end{cases}	latex	clearspeak	f of x is equal to, 2 cases, case 1, 1 x is greater than 0, case 2, 0 otherwise
+f(x) = \begin{cases} 1 & x > 0 \\ 0 & \text{otherwise} \end{cases}	latex	clearspeak	f of x is equal to 2 cases, case 1, 1 x is greater than 0, case 2, 0 otherwise
 5\,\text{m/s}	latex	clearspeak	5 m/s
 50\%	latex	clearspeak	50 percent
-\hat{y} = \beta_0 + \beta_1 x	latex	clearspeak	y hat, is equal to, beta sub 0, plus beta sub 1, x
-\bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i	latex	clearspeak	x bar, is equal to, 1 over n, the sum from i is equal to 1, to n of, x sub i
-\sigma^2 = \frac{1}{N}\sum (x_i - \mu)^2	latex	clearspeak	sigma squared is equal to, 1 over cap n, the sum of open paren x sub i, minus mu, close paren squared
+\hat{y} = \beta_0 + \beta_1 x	latex	clearspeak	y hat, is equal to beta sub 0, plus beta sub 1, x
+\bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i	latex	clearspeak	x bar, is equal to 1 over n the sum from i is equal to 1, to n of, x sub i
+\sigma^2 = \frac{1}{N}\sum (x_i - \mu)^2	latex	clearspeak	sigma squared is equal to, 1 over cap n the sum of open paren x sub i, minus mu close paren squared
 \nabla \cdot \vec{E} = \frac{\rho}{\epsilon_0}	latex	clearspeak	divergence of vector cap e, is equal to, the fraction with numerator rho, and denominator epsilon sub 0, end fraction
 E = mc²	unicode	clearspeak	cap e is equal to mc squared
-x² + y² = r²	unicode	clearspeak	x squared plus y squared, is equal to r squared
+x² + y² = r²	unicode	clearspeak	x squared plus y squared is equal to r squared
 2x ≥ 7	unicode	clearspeak	fallback
 α + β = γ	unicode	clearspeak	alpha plus beta is equal to gamma
 a₁ + a₂	unicode	clearspeak	a sub 1, plus a sub 2
@@ -57,5 +57,5 @@ f(x) → ∞	unicode	clearspeak	f of x right arrow infinity
 p < 0.05	unicode	clearspeak	fallback
 x ∈ ℝ	unicode	clearspeak	fallback
 \frac{a}{b}	latex	simplespeak	a over b
-x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}	latex	simplespeak	x is equal to, fraction, negative b plus or minus, the square root of b squared minus 4 a c, end root, over, 2 a, end fraction
+x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}	latex	simplespeak	x is equal to, fraction, negative b plus or minus the square root of b squared minus 4 a c, end root, over, 2 a, end fraction
 \sum_{i=1}^{n} i	latex	simplespeak	the sum from i is equal to 1, to n of i

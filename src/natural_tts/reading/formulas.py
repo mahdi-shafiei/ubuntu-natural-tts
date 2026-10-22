@@ -60,19 +60,6 @@ def fallback_text(text: str, language: str | None) -> str:
     return _SPACES.sub(" ", text).strip()
 
 
-def inline_words(pieces: list[tuple[float, str]]) -> str:
-    """Join spoken pieces for an inline span: a break becomes a comma."""
-    words = ""
-    for pause, piece in pieces:
-        if not words:
-            words = piece
-        elif pause > 0:
-            words += ", " + piece
-        else:
-            words += " " + piece
-    return words
-
-
 class Formulas:
     """Speaks formulas through one helper process; None means fall back."""
 

@@ -474,8 +474,7 @@ ROMAN_KEYWORDS = (
     "Type",
     "Class",
 )
-# Magnitude letters after a currency amount ($18.5M); attached to a bare
-# number they are read as letters, which is how "70B" is said.
+# Magnitude letters attached to a number (70B, $18.5M, 12k).
 MAGNITUDES = {
     "k": "thousand",
     "K": "thousand",

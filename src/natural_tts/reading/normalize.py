@@ -299,6 +299,13 @@ def _range(m: re.Match[str], _: Options) -> str:
     return f"{m.group(1)} to {m.group(2)}"
 
 
+@_sub(rf"\b({_NUMBER})([kKMBT])\b(?![\w+\-/])")
+def _magnitude(m: re.Match[str], _: Options) -> str:
+    # 70B, 3.5M, 12k, 1.8T attached to a number: thousand, million, billion,
+    # trillion (owner decision; "4k+1" and "Llama-3-70B" are left alone).
+    return f"{_num(m.group(1))} {tables.MAGNITUDES[m.group(2)]}"
+
+
 # -- units -------------------------------------------------------------------
 
 
@@ -317,9 +324,6 @@ def _unit_words(symbol: str, count: str) -> str | None:
 
 @_sub(rf"({_NUMBER})\s?({_UNIT})(?:/({_UNIT}))?(?![\w%])")
 def _units(m: re.Match[str], _: Options) -> str:
-    attached = not m.group(0)[len(m.group(1))].isspace()
-    if attached and m.group(2) in tables.MAGNITUDES:
-        return m.group(0)  # 70B, 3.5M: the engine reads the letter
     words = _unit_words(m.group(2), m.group(1))
     if words is None:
         return m.group(0)
@@ -686,6 +690,7 @@ RULES: tuple[Rule, ...] = (
     _short_version,
     _scientific,
     _currency,
+    _magnitude,
     _numbered,
     _range,
     _ordinal,

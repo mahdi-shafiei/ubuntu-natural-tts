@@ -16,8 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from natural_tts.reading.formulas import Formulas, inline_words
-from natural_tts.reading.mathcat import MathCat
+from natural_tts.reading.formulas import Formulas
+from natural_tts.reading.mathcat import MathCat, sentence
 
 GOLDEN = Path(__file__).with_name("golden_math.tsv")
 REPO_BUILD = (
@@ -66,7 +66,7 @@ def test_golden(mathcat, source, language, style, expected):
         assert pieces is None
     else:
         assert pieces is not None
-        assert inline_words(pieces) == expected
+        assert sentence(pieces, inline=True) == expected
 
 
 def test_rows_cover_both_styles_and_both_sources():
