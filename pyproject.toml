@@ -24,13 +24,10 @@ dependencies = []
 
 [project.optional-dependencies]
 piper = ["piper-tts[http]>=1.8"]
-# normt2s is pinned exactly: it is the text normaliser behind the reading
-# front end, its output is covered by a golden file, and its author says
-# minor releases may change spoken output.
 kokoro = ["kokoro>=0.9.4", "sounddevice>=0.5", "soundfile>=0.12",
-          "numpy>=1.26", "normt2s==0.7.0"]
+          "numpy>=1.26"]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.17", "mypy>=2.4", "numpy>=1.26",
-       "pre-commit>=4", "normt2s==0.7.0"]
+       "pre-commit>=4"]
 
 [project.scripts]
 natural-tts = "natural_tts.cli:main"
@@ -64,8 +61,7 @@ mypy_path = "src"
 files = ["src", "tests"]
 
 [[tool.mypy.overrides]]
-module = ["kokoro", "kokoro.*", "sounddevice", "numpy", "numpy.*", "normt2s",
-          "normt2s.*"]
+module = ["kokoro", "kokoro.*", "sounddevice", "numpy", "numpy.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
