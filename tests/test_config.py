@@ -75,6 +75,7 @@ class TestLoadSettings:
         assert ReadingSettings().enabled is True
         assert ReadingSettings().citations == "skip"
         assert ReadingSettings().code_level == 1
+        assert ReadingSettings().math_style == "clearspeak"
         assert Settings(paths=make_paths(Path("/x"))).reading == (
             ReadingSettings()
         )
@@ -135,6 +136,10 @@ class TestLoadSettings:
             (
                 "[reading]\ncode_level = true\n",
                 "reading.code_level must be int",
+            ),
+            (
+                "[reading]\nmath_style = 'mathspeak'\n",
+                "reading.math_style must be 'clearspeak' or 'simplespeak'",
             ),
             ("[kokoro]\nvoice = 'heart'\n", "kokoro.voice 'heart'"),
             ("[kokoro]\nvoice = 'xf_heart'\n", "kokoro.voice 'xf_heart'"),

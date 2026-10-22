@@ -187,6 +187,7 @@ class KokoroSettings:
 
 CITATION_MODES = ("skip", "read")
 CODE_LEVELS = (1, 2, 3)
+MATH_STYLES = ("clearspeak", "simplespeak")
 
 
 @dataclass(frozen=True)
@@ -198,6 +199,9 @@ class ReadingSettings:
     # NVDA-style verbosity for code: 1 meaningful operators, 2 adds
     # brackets and indentation changes, 3 every symbol.
     code_level: int = 1
+    # MathCAT speech style for formulas: ClearSpeak (the style students
+    # decoded best in the ETS study) or SimpleSpeak.
+    math_style: str = "clearspeak"
 
     def __post_init__(self) -> None:
         """Validate values."""
@@ -205,6 +209,10 @@ class ReadingSettings:
             raise SettingsError("reading.citations must be 'skip' or 'read'")
         if not CODE_LEVELS[0] <= self.code_level <= CODE_LEVELS[-1]:
             raise SettingsError("reading.code_level must be in 1..3")
+        if self.math_style not in MATH_STYLES:
+            raise SettingsError(
+                "reading.math_style must be 'clearspeak' or 'simplespeak'"
+            )
 
 
 @dataclass(frozen=True)
@@ -294,6 +302,7 @@ _FIELD_HELP = {
         "(English voices); false = read the raw text"
     ),
     "reading.citations": "skip | read: citation markers such as [12]",
+    "reading.math_style": "clearspeak | simplespeak: how formulas are read",
     "reading.code_level": (
         "how much of a code block's punctuation is spoken: 1 operators, "
         "2 adds brackets and indentation, 3 every symbol"
