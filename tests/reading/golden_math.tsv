@@ -1,6 +1,6 @@
 # source	language	style	expected
 # Recorded from natural-tts-mathcat (MathCAT 0.7.7 rules) through
-# Formulas.speak + mathcat.sentence(inline=True); "fallback" = left to the word rules.
+# Formulas.speak (intent.annotate applied) + mathcat.sentence(inline=True); "fallback" = word rules.
 2 + 3 = 5	latex	clearspeak	2 plus 3 is equal to 5
 x^2 + y^2 = r^2	latex	clearspeak	x squared plus y squared is equal to r squared
 a_1 + a_2 + \cdots + a_n	latex	clearspeak	a sub 1, plus a sub 2, plus dot dot dot plus a sub n
@@ -28,8 +28,8 @@ x \le 3	latex	clearspeak	x is less than or equal to 3
 0 < \epsilon < 1	latex	clearspeak	0 is less than epsilon is less than 1
 a \ne b	latex	clearspeak	a is not equal to b
 x \approx 3.14	latex	clearspeak	x is approximately equal to 3.14
-P(A \mid B) = \frac{P(B \mid A) P(A)}{P(B)}	latex	clearspeak	cap p open paren cap a given cap b close paren, is equal to, the fraction with numerator, cap p open paren cap b given cap a close paren, times cap p of cap a, and denominator cap p of cap b
-E[X] = \sum_x x\,p(x)	latex	clearspeak	cap e of cap x is equal to the sum over x of x p of x
+P(A \mid B) = \frac{P(B \mid A) P(A)}{P(B)}	latex	clearspeak	probability of cap a given cap b is equal to, the fraction with numerator, probability of cap b given cap a probability of cap a, and denominator probability of cap b
+E[X] = \sum_x x\,p(x)	latex	clearspeak	expected value of cap x is equal to the sum over x of x p of x
 \{x \mid x > 2\}	latex	clearspeak	open brace x divides x is greater than 2 close brace
 x \in \mathbb{R}	latex	clearspeak	x is a member of the real numbers
 \mathbb{R}^n	latex	clearspeak	the real numbers to the n -th power
@@ -37,7 +37,7 @@ x \in \mathbb{R}	latex	clearspeak	x is a member of the real numbers
 A \cup B	latex	clearspeak	cap a union cap b
 A \cap B = \emptyset	latex	clearspeak	cap a intersection cap b is equal to empty set
 |x|	latex	clearspeak	the absolute value of x
-\|v\|	latex	clearspeak	magnitude of v
+\|v\|	latex	clearspeak	norm of v
 \vec{v} \cdot \vec{w}	latex	clearspeak	vector v, dot product vector w
 \binom{n}{k}	latex	clearspeak	n choose k
 \begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix}	latex	clearspeak	the 2 by 2 matrix, row 1, 1, 2, row 2, 3, 4
@@ -47,7 +47,7 @@ f(x) = \begin{cases} 1 & x > 0 \\ 0 & \text{otherwise} \end{cases}	latex	clearsp
 \hat{y} = \beta_0 + \beta_1 x	latex	clearspeak	y hat, is equal to beta sub 0, plus beta sub 1, x
 \bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i	latex	clearspeak	x bar, is equal to 1 over n the sum from i is equal to 1, to n of, x sub i
 \sigma^2 = \frac{1}{N}\sum (x_i - \mu)^2	latex	clearspeak	sigma squared is equal to, 1 over cap n the sum of open paren x sub i, minus mu close paren squared
-\nabla \cdot \vec{E} = \frac{\rho}{\epsilon_0}	latex	clearspeak	divergence of vector cap e, is equal to, the fraction with numerator rho, and denominator epsilon sub 0, end fraction
+\nabla \cdot \vec{E} = \frac{\rho}{\epsilon_0}	latex	clearspeak	the divergence of vector cap e, is equal to, the fraction with numerator rho, and denominator epsilon sub 0, end fraction
 E = mc²	unicode	clearspeak	cap e is equal to mc squared
 x² + y² = r²	unicode	clearspeak	x squared plus y squared is equal to r squared
 2x ≥ 7	unicode	clearspeak	fallback

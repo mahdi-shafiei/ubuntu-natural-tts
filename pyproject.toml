@@ -61,6 +61,7 @@ convention = "google"
 "src/natural_tts/reading/tables.py" = ["RUF001"]
 "src/natural_tts/reading/normalize.py" = ["RUF001"]
 "src/natural_tts/reading/math.py" = ["RUF001"]
+"src/natural_tts/reading/intent.py" = ["RUF001"]
 "tests/reading/*.py" = ["RUF001"]
 
 [tool.mypy]

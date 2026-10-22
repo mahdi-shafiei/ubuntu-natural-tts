@@ -13,6 +13,7 @@ import logging
 import re
 
 from natural_tts.config import Settings
+from natural_tts.reading.intent import annotate
 from natural_tts.reading.math import (
     latex_to_mathml,
     nesting_depth,
@@ -43,12 +44,14 @@ def helper_language(lang_code: str) -> str:
 def to_mathml(text: str, language: str | None) -> str | None:
     """MathML for a formula's source, or None when it cannot be converted."""
     if language == LATEX:
-        return latex_to_mathml(text)
-    if language == UNICODE:
-        return unicode_math_to_mathml(text)
-    if language == MATHML:
-        return " ".join(text.split())
-    return None
+        mathml = latex_to_mathml(text)
+    elif language == UNICODE:
+        mathml = unicode_math_to_mathml(text)
+    elif language == MATHML:
+        mathml = " ".join(text.split())
+    else:
+        return None
+    return None if mathml is None else annotate(mathml)
 
 
 def fallback_text(text: str, language: str | None) -> str:

@@ -309,7 +309,8 @@ def _magnitude(m: re.Match[str], _: Options) -> str:
 # -- units -------------------------------------------------------------------
 
 
-def _unit_words(symbol: str, count: str) -> str | None:
+def unit_words(symbol: str, count: str) -> str | None:
+    """Spoken words for a unit symbol, plural when ``count`` is not one."""
     if symbol in tables.UNITS:
         return _plural(count, *tables.UNITS[symbol])
     prefix, base = symbol[0], symbol[1:]
@@ -324,11 +325,11 @@ def _unit_words(symbol: str, count: str) -> str | None:
 
 @_sub(rf"({_NUMBER})\s?({_UNIT})(?:/({_UNIT}))?(?![\w%])")
 def _units(m: re.Match[str], _: Options) -> str:
-    words = _unit_words(m.group(2), m.group(1))
+    words = unit_words(m.group(2), m.group(1))
     if words is None:
         return m.group(0)
     if m.group(3):
-        per = _unit_words(m.group(3), "1")
+        per = unit_words(m.group(3), "1")
         if per is None:
             return m.group(0)
         words = f"{words} per {per}"
@@ -337,7 +338,7 @@ def _units(m: re.Match[str], _: Options) -> str:
 
 @_sub(r"\b([a-zA-Z]+)/([a-zA-Z]+)\b")
 def _unit_per_unit(m: re.Match[str], _: Options) -> str:
-    left, right = _unit_words(m.group(1), "2"), _unit_words(m.group(2), "1")
+    left, right = unit_words(m.group(1), "2"), unit_words(m.group(2), "1")
     if left is None or right is None or len(m.group(1)) > 3:
         return m.group(0)
     return f"{left} per {right}"

@@ -35,10 +35,6 @@ _OPENERS = re.compile(
 )
 _MATH_EVIDENCE = re.compile(r"\\[A-Za-z]+|[\^_=<>≤≥≠±×÷∑∫√∞→]|[α-ωΑ-Ω]")
 _GREEK = re.compile(r"[α-ωΑ-Ω]")
-# "\mid" inside P( ), Pr( ), E[ ], Var( ) or p( ): a conditional bar.
-_CONDITIONAL = re.compile(
-    r"((?<![A-Za-z])\\?(?:Pr|P|E|Var|p)\s*[(\[][^()\[\]]*?)\\mid(?![A-Za-z])"
-)
 _SUPERSCRIPTS = "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁿⁱ"
 _SUBSCRIPTS = "₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑₒₓₔₕₖₗₘₙₚₛₜ"
 _SCRIPT_TO_BASE = str.maketrans(
@@ -161,17 +157,11 @@ def _closing_dollar(text: str, start: int) -> int:
 def latex_to_mathml(latex: str) -> str | None:
     r"""Convert LaTeX to one line of MathML, or None when it cannot be done.
 
-    A conditional bar (``P(A \mid B)``, ``E[X \mid Y]``, also inside a
-    longer equation) becomes a plain bar before conversion so MathCAT says
-    "given" rather than "divides"; set-builder bars are left alone.
+    Meaning (conditional bars, expectations, units) is added afterwards by
+    ``intent.annotate``; this function only converts.
     """
     if len(latex) > MAX_SPAN_CHARS or _brace_depth(latex) > MAX_BRACE_DEPTH:
         return None
-    while True:
-        rewritten = _CONDITIONAL.sub(r"\1|", latex)
-        if rewritten == latex:
-            break
-        latex = rewritten
     from latex2mathml.converter import convert
 
     try:

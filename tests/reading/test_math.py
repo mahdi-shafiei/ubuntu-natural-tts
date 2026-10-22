@@ -110,20 +110,6 @@ class TestLatexToMathml:
         assert mathml.startswith("<math") and "\n" not in mathml
         assert "<mfrac>" in mathml
 
-    def test_conditional_bar_becomes_a_plain_bar_inside_probability(self):
-        given = latex_to_mathml(r"P(A \mid B)")
-        assert given is not None
-        # latex2mathml writes the plain bar as the entity &#x0007C;
-        assert "&#x02223;" not in given and "&#x0007C;" in given
-        for latex in (
-            r"\Pr(A \mid B)",
-            r"E[X \mid Y]",
-            r"p(x \mid \theta)",
-            r"P(A \mid B) = \frac{P(B \mid A) P(A)}{P(B)}",
-        ):
-            out = latex_to_mathml(latex)
-            assert out is not None and "&#x02223;" not in out, latex
-
     def test_natural_log_is_named(self):
         out = latex_to_mathml(r"\ln(x + 1)")
         assert out is not None
