@@ -6,6 +6,13 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `natural-tts setup` (and so `./install.sh`) restarts the Piper and
+  Kokoro services instead of only enabling them, so an upgrade with
+  `git pull && ./install.sh` takes effect without a reboot. A service
+  that fails to restart is now reported instead of ignored.
+
 ## [0.1.1] - 2026-10-21
 
 ### Changed

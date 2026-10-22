@@ -239,14 +239,20 @@ class TestSetup:
         assert world.run("apply") == 0
         module = world.paths.speechd_dir / f"modules/{SPEECHD_MODULE}.conf"
         assert "en_GB-cori-high" in module.read_text()
+        argvs = world.runner.argvs
         assert (
             "systemctl",
             "--user",
             "restart",
             PIPER_SERVICE,
             KOKORO_SERVICE,
+        ) in argvs
+        assert (
+            "systemctl",
+            "--user",
+            "restart",
             "speech-dispatcher.service",
-        ) in (world.runner.argvs)
+        ) in (argvs)
 
     def test_teardown_reverts_setup(self, world):
         world.run("setup")

@@ -86,18 +86,30 @@ def install_units(settings: Settings, runner: Runner = run) -> None:
 
 
 def activate(runner: Runner = run) -> None:
-    """Enable and start the services and the Speech Dispatcher socket.
+    """Enable the services and the Speech Dispatcher socket, then (re)start.
 
     The socket lets sandboxed apps (e.g. the Firefox snap) reach Speech
     Dispatcher, which then picks up the new default module on restart.
+    The services are restarted rather than started so that an upgrade
+    replaces a daemon still running the old code; enabling them without
+    ``--now`` avoids loading Kokoro twice on a fresh install.
     """
-    _systemctl(runner, "enable", "--now", SPEECHD_SOCKET, *SERVICES)
-    _systemctl(runner, "restart", SPEECHD_SERVICE, check=False)
+    _systemctl(runner, "enable", "--now", SPEECHD_SOCKET)
+    _systemctl(runner, "enable", *SERVICES)
+    restart_services(runner)
 
 
 def restart_services(runner: Runner = run) -> None:
-    """Restart everything so new settings take effect."""
-    _systemctl(runner, "restart", *SERVICES, SPEECHD_SERVICE, check=False)
+    """Restart everything so new code and settings take effect.
+
+    Speech Dispatcher may not be running yet (its socket starts it on
+    demand), so only the natural-tts services are required to restart.
+
+    Raises:
+        SystemdError: if a natural-tts service fails to restart.
+    """
+    _systemctl(runner, "restart", *SERVICES)
+    _systemctl(runner, "restart", SPEECHD_SERVICE, check=False)
 
 
 def deactivate(runner: Runner = run) -> None:

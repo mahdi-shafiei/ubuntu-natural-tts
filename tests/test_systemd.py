@@ -90,19 +90,15 @@ class TestInstall:
             assert (settings.paths.systemd_user_dir / name).is_file()
         assert runner.argvs == [("systemctl", "--user", "daemon-reload")]
 
-    def test_activate_enables_socket_and_services(self, tmp_path):
+    def test_activate_enables_then_restarts_running_services(self):
+        # `enable --now` leaves a running service on old code, so an upgrade
+        # (`git pull && ./install.sh`) must restart the natural-tts services.
         runner = FakeSystemctl()
         activate(runner)
         assert runner.argvs == [
-            (
-                "systemctl",
-                "--user",
-                "enable",
-                "--now",
-                SPEECHD_SOCKET,
-                PIPER_SERVICE,
-                KOKORO_SERVICE,
-            ),
+            ("systemctl", "--user", "enable", "--now", SPEECHD_SOCKET),
+            ("systemctl", "--user", "enable", PIPER_SERVICE, KOKORO_SERVICE),
+            ("systemctl", "--user", "restart", PIPER_SERVICE, KOKORO_SERVICE),
             ("systemctl", "--user", "restart", SPEECHD_SERVICE),
         ]
 
@@ -110,24 +106,29 @@ class TestInstall:
         with pytest.raises(SystemdError, match="unit not found"):
             activate(FakeSystemctl(fail={"enable"}))
 
+    def test_activate_raises_when_a_service_restart_fails(self):
+        with pytest.raises(SystemdError, match="unit not found"):
+            activate(FakeSystemctl(fail={KOKORO_SERVICE}))
+
     def test_speechd_restart_failure_is_tolerated(self):
         # speech-dispatcher.service may not be running yet; the socket
         # starts it on demand.
-        activate(FakeSystemctl(fail={"restart"}))
+        activate(FakeSystemctl(fail={SPEECHD_SERVICE}))
 
     def test_restart_services(self):
         runner = FakeSystemctl()
         restart_services(runner)
         assert runner.argvs == [
-            (
-                "systemctl",
-                "--user",
-                "restart",
-                PIPER_SERVICE,
-                KOKORO_SERVICE,
-                SPEECHD_SERVICE,
-            )
+            ("systemctl", "--user", "restart", PIPER_SERVICE, KOKORO_SERVICE),
+            ("systemctl", "--user", "restart", SPEECHD_SERVICE),
         ]
+
+    def test_restart_services_raises_when_a_service_fails(self):
+        with pytest.raises(SystemdError, match="unit not found"):
+            restart_services(FakeSystemctl(fail={PIPER_SERVICE}))
+
+    def test_restart_services_tolerates_missing_speechd(self):
+        restart_services(FakeSystemctl(fail={SPEECHD_SERVICE}))
 
     def test_deactivate_and_uninstall(self, tmp_path):
         settings = make_settings(tmp_path)
