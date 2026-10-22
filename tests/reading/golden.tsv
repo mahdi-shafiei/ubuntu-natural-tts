@@ -1,0 +1,99 @@
+# input	expected	note
+# --- the blueprint's "what goes wrong today" table
+2026-10-21	October twenty-first, twenty twenty-six	blueprint
+03/04/2026	March fourth, twenty twenty-six	blueprint, US voice
+3.12.1	three point twelve point one	blueprint
+$5.50, €3	five dollars and fifty cents, three euros	blueprint
+1e-5	one times ten to the power of minus five	blueprint
+e.g. this	for example this	blueprint
+https://github.com/x/y	github dot com slash x slash y	blueprint
+reported [12] here	reported here	blueprint, citations skipped
+C#	C sharp	blueprint
+# --- the owner's demo texts
+In E. coli the gene lacZ is expressed, as Dr. Smith et al. showed in Fig. 3 of the paper.	In E. coli the gene lac Z is expressed, as Doctor Smith et al showed in Figure three of the paper.	demo
+We used a phosphate buffered saline solution at pH 7.4 and 37 °C (n = 3; p < 0.05), see Eq. 2: x = 1.	We used a phosphate buffered saline solution at pH seven point four and thirty-seven degrees Celsius (n equals three; p is less than zero point zero five), see Equation two: x equals one.	demo
+Our neighbour, Dr. Ana Ruiz, moved to St. Paul last spring; her brother, Mr. T. Ruiz, stayed behind.	Our neighbour, Doctor Ana Ruiz, moved to Saint Paul last spring; her brother, Mister T. Ruiz, stayed behind.	demo
+The effect was first reported by Chen et al. in 2019 (see Ref. 4; cf. Sec. 3.2), and later confirmed, e.g. by Müller et al., with larger samples (n = 120; p < 0.01).	The effect was first reported by Chen et al in twenty nineteen (see Reference four; compare Section three point two), and later confirmed, for example by Müller et al, with larger samples (n equals one hundred twenty; p is less than zero point zero one).	demo
+# --- symbols and inline math
+p < 0.05	p is less than zero point zero five	symbol
+n = 3	n equals three	symbol
+5 ± 2	five plus or minus two	symbol
+x ≤ y ≥ z ≠ w ≈ v	x is less than or equal to y is greater than or equal to z is not equal to w is approximately equal to v	symbol
+3 × 4 and a·b	three times four and a times b	symbol
+x² + y³	x squared plus y cubed	superscript
+R² = 0.9	R squared equals zero point nine	superscript
+10⁻³	ten to the power of minus three	superscript
+x^2 and x**2 and x^10	x squared and x squared and x to the power of ten	caret
+1.5 × 10^-3	one point five times ten to the power of minus three	scientific
+1.0e3	one point zero times ten to the power of three	scientific
+α = 0.05 and β	alpha equals zero point zero five and beta	greek
+χ² test	chi squared test	greek
+√2 and ∞	square root of two and infinity	symbol
+∑ x_i	sum of x sub i	symbol
+~5 and ~ 5	approximately five and approximately five	tilde
+A → B	A to B	arrow
+x = 1/2 and 2/3	x equals one half and two thirds	fraction
+Smith & Jones	Smith and Jones	ampersand
+# --- units and quantities
+37 °C and 25 °F	thirty-seven degrees Celsius and twenty-five degrees Fahrenheit	unit
+37°C	thirty-seven degrees Celsius	unit
+10 µg/mL and 10 μm	ten micrograms per milliliter and ten micrometers	unit
+5 mM NaCl	five millimolar sodium chloride	unit, named formula
+2 kDa and 50 nm	two kilodaltons and fifty nanometers	unit
+1 h 30 min and 30 s	one hour thirty minutes and thirty seconds	unit
+2 hr and 30 sec	two hours and thirty seconds	unit
+5 µL and 3 mL and 2 L	five microliters and three milliliters and two liters	unit
+100 Hz and 5 ms	one hundred hertz and five milliseconds	unit
+1 mm and 5 mm	one millimeter and five millimeters	plural
+5 km/h and 10 mg/kg	five kilometers per hour and ten milligrams per kilogram	per
+20% and 0.5 %	twenty percent and zero point five percent	percent
+95% CI 1.2–3.4	ninety-five percent C I one point two to three point four	range, LSEQ
+3–5 mm and 5-10%	three to five millimeters and five to ten percent	range
+pages 3-5 and pp. 12-15	pages three to five and pages twelve to fifteen	range
+5 wt% and 50 v/v	five weight percent and fifty volume per volume	unit
+1,000 cells at 4 °C for 2 h	one thousand cells at four degrees Celsius for two hours	unit
+10,000 and 1,234.5	ten thousand and one thousand two hundred thirty-four point five	number
+2.5-fold and 10-fold	two point five-fold and ten-fold	hyphen kept
+mean ± SD (n = 3; p < 0.05)	mean plus or minus S D (n equals three; p is less than zero point zero five)	LSEQ
+p = .03	p equals point zero three	decimal
+# --- abbreviations
+see Eq. 2 and Eqs. 3 and 4	see Equation two and Equations three and four	EXPN
+Fig. 3 shows; Figs. 4-6 too	Figure three shows; Figures four to six too	EXPN
+Sec. 3.2 and Ref. 7, cf. Tab. 1	Section three point two and Reference seven, compare Table one	EXPN
+Vol. 3, No. 2, pp. 12-15, Ch. 4	Volume three, Number two, pages twelve to fifteen, Chapter four	EXPN
+Thm. 2 and Lem. 3 and Def. 1	Theorem two and Lemma three and Definition one	EXPN
+i.e. this, viz. that, vs. them, ca. 1900, approx. 5	that is this, namely that, versus them, circa nineteen hundred, approximately five	EXPN
+w.r.t. x and w/o y and a.k.a. z	with respect to x and without y and also known as z	EXPN
+Dr. Smith lives on Elm St. in St. Louis.	Doctor Smith lives on Elm Street in Saint Louis.	gate
+12 Oak Dr. is where Dr. Jones lives.	twelve Oak Drive is where Doctor Jones lives.	gate
+No. 5 and no doubt	Number five and no doubt	gate
+Mr. and Mrs. J. Doe met Prof. Lee and Ms. Ray.	Mister and Missus J. Doe met Professor Lee and Miss Ray.	title
+Jan. 5 and Sept. 2024 and Mon.	January five and September twenty twenty-four and Monday	month
+U.S. and U.K. and Ph.D.	U S and U K and P h D	dotted
+ANOVA and SEM and IQR	ANOVA and S E M and I Q R	LSEQ, ASWD
+at 9 a.m. to 6 p.m.	at nine A M to six P M	time
+by Smith et al. Then etc. The end.	by Smith et al. Then et cetera. The end.	sentence end kept
+# --- dates, times, versions, currency
+October 21, 2026 and 21 October 2026	October twenty-first, twenty twenty-six and October twenty-first, twenty twenty-six	date
+at 14:30 and 2:30 pm and 2:05	at fourteen thirty and two thirty P M and two oh five	time
+a 4:3 ratio and a 1:1000 dilution	a four to three ratio and a one to one thousand dilution	ratio
+v2.1.0 and Python 3.12	version two point one point zero and Python three point twelve	version
+£10 and ¥100 and $5 and $10	ten pounds and one hundred yen and five dollars and ten dollars	currency
+1st and 21st century and the 1990s	first and twenty-first century and the nineteen nineties	ordinal
+in 2019 and 1,000 and 2024 samples	in twenty nineteen and one thousand and two thousand twenty-four samples	year vs count
+# --- tokens
+Cas9 and p53 and IL-6 and HbA1c	Cas nine and p fifty-three and I L six and H b A. one c	token; the lexicon marks Cas9 before this runs
+DNA, mRNA, qPCR and CRISPR	D N A., m R N A., q P C R and CRISPR	token; A. is the letter name for misaki
+CO2 and H2O and NaCl and NaOH	C O two and water and sodium chloride and N A. O H	formula
+C++ and F#	C plus plus and F sharp	token
+# --- urls, citations, links
+see www.example.org/docs now	see example dot org slash docs now	url
+mail me at a.b@example.com	mail me at a dot b at example dot com	email
+(Smith et al., 2019; Doe and Roe, 2020) found it	found it	citation skipped
+Smith (2020) found it [1, 2] and [3-5].	Smith (twenty twenty) found it and.	citation skipped
+results² were	results were	footnote skipped
+[the docs](/docs/) and [x](y)	[the docs] (/docs/) and [x] (y)	link broken
+# --- untouched prose
+Linux can finally read to you in a natural voice.	Linux can finally read to you in a natural voice.	plain
+well-known, re-run, e-mail, p-value	well-known, re-run, e-mail, p-value	plain
+a—b and c – d	a, b and c, d	dash
