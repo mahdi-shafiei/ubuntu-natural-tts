@@ -73,6 +73,31 @@ class TestSpans:
         assert find_math_spans("a lonely $x^2 with no end") == []
         assert find_math_spans("\\begin{equation} a = b") == []
 
+    def test_unclosed_openers_cost_linear_time(self):
+        # Every opener without a closer must not rescan the window: the
+        # 8 000-char window should cost about five times the 1 500-char page.
+        unit = "$5 and $$ or \\[ and \\( and \\begin{equation} "
+        page, window = unit * 36, unit * 190
+        assert 1_400 < len(page) < 1_600 and 7_500 < len(window) < 8_500
+
+        def cost(text):
+            start = time.perf_counter()
+            for _ in range(20):
+                find_math_spans(text)
+            return time.perf_counter() - start
+
+        small = min(cost(page) for _ in range(3))
+        large = min(cost(window) for _ in range(3))
+        assert large < 12 * small + 0.002
+
+    def test_closed_spans_after_unclosed_openers_are_still_found(self):
+        text = "a \\[ b $$ c \\begin{equation} d $x^2$ e \\[y\\] f"
+        spans = find_math_spans(text)
+        assert [(s.latex, s.display) for s in spans] == [
+            ("x^2", False),
+            ("y", True),
+        ]
+
     def test_spans_longer_than_the_cap_are_ignored(self):
         text = "$" + "x+" * (MAX_SPAN_CHARS // 2 + 10) + "x$"
         assert find_math_spans(text) == []
@@ -98,6 +123,12 @@ class TestLatexToMathml:
         ):
             out = latex_to_mathml(latex)
             assert out is not None and "&#x02223;" not in out, latex
+
+    def test_natural_log_is_named(self):
+        out = latex_to_mathml(r"\ln(x + 1)")
+        assert out is not None
+        assert "<mi>natural log</mi><mo>&#x2061;</mo>" in out
+        assert "<mi>ln</mi>" not in out
 
     def test_set_builder_bar_is_kept(self):
         out = latex_to_mathml(r"\{x \mid x > 2\}")

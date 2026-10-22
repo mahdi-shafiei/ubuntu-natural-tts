@@ -322,3 +322,27 @@ class TestMath:
         assert out == "where x squared and y squared hold."
         warnings = [r for r in caplog.records if r.levelname == "WARNING"]
         assert len(warnings) == 1 and "latex2mathml" in warnings[0].message
+
+    def test_hostile_delimiters_do_not_stall_the_first_segment(self, tmp_path):
+        settings = make_settings(tmp_path)
+
+        def first(text):
+            start = time.perf_counter()
+            next(prepare(text, settings))
+            return time.perf_counter() - start
+
+        page = "Prices: " + "$5 and $$ or \\[ and \\begin{equation} " * 40
+        hostile = "Prices: " + "$5 and $$ or \\[ and \\begin{equation} " * 30000
+        assert len(hostile) > 1_000_000
+        small = min(first(page) for _ in range(3))
+        large = min(first(hostile) for _ in range(3))
+        assert large < 2.5 * small + 0.01
+
+    def test_many_inline_formulas_are_read_in_order(
+        self, tmp_path, fake_helper
+    ):
+        text = " ".join(f"Item {i} is $x_{i}$." for i in range(200))
+        out = texts(prepare(text, make_settings(tmp_path)))
+        joined = " ".join(out)
+        assert joined.count("[ClearSpeak Medium]") == 200
+        assert "$" not in joined

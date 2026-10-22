@@ -25,15 +25,13 @@ _ENVIRONMENTS = (
     "math",
 )
 _DISPLAY_ENVIRONMENTS = frozenset(_ENVIRONMENTS) - {"math"}
-# Delimited spans. Each alternative is bounded and cannot overlap itself.
-_SPAN = re.compile(
-    r"\$\$(?P<dd>[^$]{1,10000}?)\$\$"
-    r"|\\\[(?P<br>.{1,10000}?)\\\]"
-    r"|\\\((?P<pa>.{1,10000}?)\\\)"
-    r"|\\begin\{(?P<env>" + "|".join(_ENVIRONMENTS) + r")(?P<star>\*?)\}"
-    r"(?P<body>.{1,10000}?)\\end\{(?P=env)(?P=star)\}"
-    r"|(?<![\\$\w])\$(?P<d>[^$\n]{1,10000}?)\$(?![\w$])",
-    re.DOTALL,
+# Delimiters are paired in one left-to-right pass (``find_math_spans``);
+# a closer found absent is not searched for again, so a window full of
+# unclosed openers costs linear time.
+_OPENERS = re.compile(
+    r"\$\$|\\\[|\\\(|\\begin\{(?P<env>"
+    + "|".join(_ENVIRONMENTS)
+    + r")(?P<star>\*?)\}|(?<![\\$\w])\$(?!\$)"
 )
 _MATH_EVIDENCE = re.compile(r"\\[A-Za-z]+|[\^_=<>≤≥≠±×÷∑∫√∞→]|[α-ωΑ-Ω]")
 _GREEK = re.compile(r"[α-ωΑ-Ω]")
@@ -80,27 +78,84 @@ def _is_math_dollars(body: str) -> bool:
 
 
 def find_math_spans(text: str) -> list[MathSpan]:
-    """Find delimited LaTeX spans; prices and shell variables are skipped."""
+    """Find delimited LaTeX spans; prices and shell variables are skipped.
+
+    One left-to-right pass. The next position of every closer and opener
+    is cached, so a window full of unclosed openers costs linear time. A
+    span whose body holds another opener of its own kind is not a span:
+    the closer belongs to the inner opener.
+    """
     spans: list[MathSpan] = []
-    for match in _SPAN.finditer(text):
-        kind = match.lastgroup
-        if kind == "d":
-            body, display = match.group("d"), False
-            if not _is_math_dollars(body):
-                continue
-        elif kind == "dd":
-            body, display = match.group("dd"), True
-        elif kind == "br":
-            body, display = match.group("br"), True
-        elif kind == "pa":
-            body, display = match.group("pa"), False
-        else:
-            body = match.group("body")
+    cache: dict[str, int] = {}
+    position = 0
+    while (match := _OPENERS.search(text, position)) is not None:
+        opener = match.group(0)
+        position = match.end()
+        if opener.startswith("\\begin"):
+            environment = match.group("env") + match.group("star")
+            literal = f"\\begin{{{environment}}}"
+            closer = f"\\end{{{environment}}}"
             display = match.group("env") in _DISPLAY_ENVIRONMENTS
-        if len(body) > MAX_SPAN_CHARS:
+        else:
+            literal = opener
+            closer, display = _CLOSERS[opener]
+        if opener == "$":
+            found = _dollar_closer(text, cache, position)
+        else:
+            found = _next(text, cache, closer, position)
+            inner = _next(text, cache, literal, position)
+            if 0 <= inner < found:
+                continue
+        if found < 0:
             continue
-        spans.append(MathSpan(match.start(), match.end(), body, display))
+        body = text[position:found]
+        if not body or len(body) > MAX_SPAN_CHARS:
+            continue
+        if opener == "$" and ("$" in body or not _is_math_dollars(body)):
+            continue
+        spans.append(
+            MathSpan(match.start(), found + len(closer), body, display)
+        )
+        position = found + len(closer)
     return spans
+
+
+_CLOSERS = {
+    "$$": ("$$", True),
+    "\\[": ("\\]", True),
+    "\\(": ("\\)", False),
+    "$": ("$", False),
+}
+
+
+def _next(text: str, cache: dict[str, int], needle: str, start: int) -> int:
+    """``text.find(needle, start)``, remembered while ``start`` advances."""
+    hit = cache.get(needle)
+    if hit is None or 0 <= hit < start:
+        hit = text.find(needle, start)
+        cache[needle] = hit
+    return hit
+
+
+def _dollar_closer(text: str, cache: dict[str, int], start: int) -> int:
+    """The next ``$`` that can close a span, on the same line, else -1."""
+    hit = cache.get("$close")
+    if hit is None or 0 <= hit < start:
+        hit = _closing_dollar(text, start)
+        cache["$close"] = hit
+    if hit >= 0 and text.find("\n", start, hit) >= 0:
+        return -1
+    return hit
+
+
+def _closing_dollar(text: str, start: int) -> int:
+    found = text.find("$", start)
+    while found >= 0:
+        after = text[found + 1 : found + 2]
+        if after != "$" and not (after.isalnum() or after == "_"):
+            return found
+        found = text.find("$", found + 1)
+    return -1
 
 
 def latex_to_mathml(latex: str) -> str | None:
@@ -123,7 +178,12 @@ def latex_to_mathml(latex: str) -> str | None:
         mathml = convert(latex)
     except Exception:
         return None
+    # MathCAT spells "<mi>ln</mi>" letter by letter; name it.
+    mathml = mathml.replace("<mi>ln</mi>", _NATURAL_LOG)
     return " ".join(mathml.split())
+
+
+_NATURAL_LOG = "<mi>natural log</mi><mo>&#x2061;</mo>"
 
 
 def _brace_depth(latex: str) -> int:
