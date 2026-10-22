@@ -195,6 +195,12 @@ If something stays silent, run `natural-tts doctor`.
   LaTeX, Org, AsciiDoc, prompts and diffs are read as words
   (`get_user_name(x)` is "get user name x"), with `code_level` choosing
   how much punctuation you hear.
+- **Reads math.** LaTeX (`$…$`, `$$…$$`, equation environments), Unicode
+  formulas and MathML on web pages are spoken the way a math teacher
+  reads them, through [MathCAT](https://nsoiffer.github.io/MathCAT/):
+  `\frac{a}{b}` is "a over b", `\int_0^1 f(x)\,dx` is "the integral
+  from 0 to 1 of f of x d x", with "end fraction" and "end root" marking
+  nested scope. `math_style` chooses ClearSpeak or SimpleSpeak.
 - **Fast start, instant stop.** Speech starts after the first short chunk;
   stop takes effect within about a tenth of a second.
 - **Self-healing.** Audio-device or synthesis errors are logged and
@@ -233,6 +239,10 @@ flowchart LR
   socket.
 - Both services and the Speech Dispatcher configuration are generated from
   the single `settings.toml`.
+- **MathCAT** speaks formulas. The daemon starts `natural-tts-mathcat`
+  (a helper built from the MathCAT crate, downloaded by `setup`) once and
+  sends it MathML; its answer carries the pauses and spelled letters that
+  become the spoken segments.
 
 ## Configuration
 
@@ -340,6 +350,8 @@ Each failing check prints the command that fixes it. Common cases:
 | A name or term is mispronounced | Add it to `~/.config/natural-tts/lexicon.toml` (see [Configuration](#configuration)) and run `natural-tts apply`. |
 | Code is read with too much or too little punctuation | `reading.code_level` is 1 (operators only), 2 (adds brackets, separators and indentation) or 3 (every symbol). |
 | A web page's headings and lists are read as one paragraph | Only Firefox puts the selection's HTML on the clipboard; Chromium-based browsers hand over plain text, so structure is recognised there only from Markdown markers. Copying with <kbd>Ctrl</kbd>+<kbd>C</kbd> and pressing <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> can help, since the copy clipboard often carries HTML. |
+| A formula is read as a jumble of words, or `doctor` says the Math helper is missing | `natural-tts apply` downloads the release's MathCAT helper (`~/.local/share/natural-tts/bin/natural-tts-mathcat`). Offline, or on a platform without a binary, build it: `natural-tts setup --helper-source /path/to/clone/helper/mathcat` (needs `cargo`). Until then formulas are read as words. |
+| A formula is spoken in a way you do not want | `reading.math_style = "simplespeak"` is shorter; see the known misreadings under [FAQ](#faq). Formulas with unbalanced delimiters are read as words. |
 | Upgrading left the old behaviour running | Since 0.1.2 `./install.sh` restarts the services. On an older install run `natural-tts apply` after `git pull && ./install.sh`. |
 
 Logs: `journalctl --user -u natural-tts-kokoro.service` and
@@ -397,8 +409,29 @@ shell transcripts, Python prompts, diffs and plain indented code. The code
 voice is the reading voice.
 
 **Does it read math?**
-Inline fragments such as `x²`, `5 ± 2` or `1.5 × 10^-3` are spoken as
-words. Whole LaTeX or MathML expressions are planned for a later release.
+Yes, since 0.4.0. LaTeX between `$…$`, `$$…$$`, `\(…\)`, `\[…\]` or in
+`equation`, `align` and similar environments, Unicode formulas on their
+own line (`E = mc²`, as PDFs paste them), MathML on web pages (Firefox
+hands it over; Wikipedia and MathJax pages carry the LaTeX too) are
+converted to MathML and spoken by [MathCAT](https://nsoiffer.github.io/MathCAT/),
+the engine behind NVDA's and Orca's math support, in ClearSpeak, the
+style students understood best in the published comparison.
+`reading.math_style = "simplespeak"` is terser. Nested fractions and
+roots get spoken closers ("end fraction", "end root"). Spanish, French,
+Portuguese and Chinese voices get MathCAT's rules for those languages;
+other voices get English. Short fragments inside prose such as `x²`,
+`5 ± 2` or `p < 0.05` keep the word rules. Known misreadings in this
+release: the set-builder bar in `\{x \mid x > 2\}` is "divides",
+`\mathbb{R}^n` is "the real numbers to the n-th power", the conditions
+of a `cases` block run into their values, and `\text{m/s}` inside a
+formula is spelled. Dollar amounts (`$5 and $10`) and shell variables
+are never taken for formulas.
+
+**What is the MathCAT helper?**
+A 5 MB program, `natural-tts-mathcat`, built from the MathCAT Rust crate
+with its speech rules embedded, started once by the daemon and kept
+running. `setup` downloads it from this project's release for your
+architecture and checks its SHA-256; `doctor` shows its version.
 
 **Can I skip citation markers like [12] or (Smith et al., 2019)?**
 They are skipped by default; `reading.citations = "read"` says them.

@@ -6,6 +6,35 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-22
+
+### Added
+
+- Formulas are read aloud on the hotkey path. LaTeX between `$…$`,
+  `$$…$$`, `\(…\)`, `\[…\]` and in equation environments, Unicode
+  formulas such as `E = mc²` on their own line, MathML on web pages and
+  MathJax annotations are converted to MathML and spoken by MathCAT in
+  ClearSpeak (`reading.math_style = "simplespeak"` switches). Inline
+  formulas stay inside their sentence; display formulas become their own
+  segments with MathCAT's pauses. Nested expressions get the verbose
+  closers ("end fraction", "end root"). The MathCAT language follows the
+  Kokoro voice for Spanish, French, Portuguese and Chinese.
+- `natural-tts-mathcat`, a small helper binary built from the MathCAT
+  crate with its rules embedded. `setup` and `apply` download the
+  release's binary for the machine's architecture and verify its
+  checksum; `setup --helper-source helper/mathcat` builds it with cargo
+  when the download is not possible. `doctor` reports the helper's
+  version. Without the helper formulas are read as words.
+- `P(A \mid B)` is spoken as "given", also inside longer equations;
+  `\ln` as "natural log of".
+
+### Changed
+
+- Formula delimiters are found in one linear pass, so text full of
+  unmatched `$` or `\[` no longer slows the first segment.
+- Ubuntu 22.04 or newer is required for the helper binary (glibc 2.34).
+
+
 ## [0.3.0] - 2026-10-22
 
 ### Added
