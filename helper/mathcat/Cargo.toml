@@ -1,0 +1,23 @@
+[package]
+name = "natural-tts-mathcat"
+version = "0.4.0"
+edition = "2021"
+license = "MIT"
+description = "Speaks MathML for natural-tts: one expression per line in, one SSML line out (MathCAT)."
+repository = "https://github.com/mahdi-shafiei/ubuntu-natural-tts"
+publish = false
+
+[[bin]]
+name = "natural-tts-mathcat"
+path = "src/main.rs"
+
+[dependencies]
+# MathCAT (MIT). include-zip embeds the rules for every language in the binary;
+# the rules path is then the virtual name "Rules".
+mathcat = { version = "0.7.7", default-features = false, features = ["include-zip"] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

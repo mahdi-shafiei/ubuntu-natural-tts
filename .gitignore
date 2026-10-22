@@ -10,3 +10,4 @@ htmlcov/
 dist/
 *.egg-info/
 media/
+helper/mathcat/target/

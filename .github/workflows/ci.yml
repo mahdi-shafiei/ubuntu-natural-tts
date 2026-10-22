@@ -71,3 +71,39 @@ jobs:
           assert wav[:4] == b"RIFF" and len(wav) > 10_000, len(wav)
           print(f"Piper produced {len(wav)} bytes of WAV")
           PY
+
+  mathcat-helper:
+    name: MathCAT helper (${{ matrix.runner }})
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-22.04, ubuntu-22.04-arm]
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write  # to attach the binary to the tag's release
+    defaults:
+      run:
+        working-directory: helper/mathcat
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Format and lint
+        run: cargo fmt --check && cargo clippy --release -- -D warnings
+      - name: Build and smoke-test
+        run: cargo test --release
+      - name: Name the binary for its architecture
+        run: |
+          arch="$(uname -m)"
+          cp target/release/natural-tts-mathcat "natural-tts-mathcat-linux-${arch}"
+          sha256sum "natural-tts-mathcat-linux-${arch}" > "natural-tts-mathcat-linux-${arch}.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: natural-tts-mathcat-${{ matrix.runner }}
+          path: helper/mathcat/natural-tts-mathcat-linux-*
+      - name: Attach to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${GITHUB_REF_NAME}" natural-tts-mathcat-linux-* --clobber
