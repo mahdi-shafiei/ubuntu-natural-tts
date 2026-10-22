@@ -37,25 +37,30 @@ pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
         not _gnome_available(),
-        reason="needs gsettings, the GNOME media-keys schema and dbus-run-session",
+        reason="needs gsettings, the media-keys schema and dbus-run-session",
     ),
 ]
 
 # Runs inside the private session: the user's bus and dconf are not reachable.
-_SCRIPT = f'''
+_SCRIPT = f"""
 import sys
-from natural_tts.hotkeys import (
-    CUSTOM_LIST_KEY, HOTKEYS, MEDIA_KEYS_SCHEMA, install_hotkeys, uninstall_hotkeys,
-)
+from natural_tts.hotkeys import CUSTOM_LIST_KEY, HOTKEYS, MEDIA_KEYS_SCHEMA
+from natural_tts.hotkeys import install_hotkeys, uninstall_hotkeys
 from natural_tts.system import run
 
 def get(schema, key):
     return run(["gsettings", "get", schema, key]).text.strip()
 
-user_path = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom0/"
+user_path = (
+    "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
+    "custom0/"
+)
 custom = f"{{MEDIA_KEYS_SCHEMA}}.custom-keybinding:{{user_path}}"
-assert get(MEDIA_KEYS_SCHEMA, CUSTOM_LIST_KEY) == "@as []", "dconf is not private"
-run(["gsettings", "set", MEDIA_KEYS_SCHEMA, CUSTOM_LIST_KEY, f"['{{user_path}}']"])
+assert get(MEDIA_KEYS_SCHEMA, CUSTOM_LIST_KEY) == "@as []", "not private"
+run(
+    ["gsettings", "set", MEDIA_KEYS_SCHEMA, CUSTOM_LIST_KEY,
+     f"['{{user_path}}']"]
+)
 run(["gsettings", "set", custom, "name", "'Terminal'"])
 run(["gsettings", "set", custom, "binding", "'<Super><Alt>s'"])
 warnings = install_hotkeys({CLI!r})
@@ -70,10 +75,12 @@ uninstall_hotkeys()
 assert get(MEDIA_KEYS_SCHEMA, CUSTOM_LIST_KEY) == f"['{{user_path}}']"
 assert get(schema, "command") == "''"
 print("ok")
-'''
+"""
 
 
-def _private_session(script: str, config_home: Path) -> subprocess.CompletedProcess[str]:
+def _private_session(
+    script: str, config_home: Path
+) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ, XDG_CONFIG_HOME=str(config_home))
     env.pop("DBUS_SESSION_BUS_ADDRESS", None)
     return subprocess.run(
@@ -103,11 +110,17 @@ def test_install_and_uninstall_with_real_gsettings(tmp_path):
 
 
 def test_private_session_is_really_private(tmp_path):
-    marker = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/probe/"
+    marker = (
+        "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
+        "probe/"
+    )
+    key = "custom-keybindings"
     script = (
         "from natural_tts.system import run\n"
-        f"run(['gsettings', 'set', {MEDIA_KEYS_SCHEMA!r}, 'custom-keybindings', \"['{marker}']\"])\n"
-        f"print(run(['gsettings', 'get', {MEDIA_KEYS_SCHEMA!r}, 'custom-keybindings']).text.strip())\n"
+        f"run(['gsettings', 'set', {MEDIA_KEYS_SCHEMA!r}, {key!r}, "
+        f"\"['{marker}']\"])\n"
+        f"print(run(['gsettings', 'get', {MEDIA_KEYS_SCHEMA!r}, {key!r}])"
+        ".text.strip())\n"
     )
     before = _desktop_list()
     result = _private_session(script, tmp_path)
