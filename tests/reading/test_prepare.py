@@ -5,6 +5,7 @@ from types import GeneratorType
 
 from natural_tts.config import KokoroSettings, ReadingSettings
 from natural_tts.daemon import plain_chunker
+from natural_tts.ipc import HTML_FORMAT
 from natural_tts.reading import chunker_for, prepare
 from natural_tts.segments import Kind, Segment
 from tests.fakes import make_settings
@@ -92,3 +93,128 @@ class TestPrepare:
         for segment in islice(prepare(text, make_settings(tmp_path)), 50):
             assert segment.text.count("[") == segment.text.count("](/")
             assert segment.text.count("](/") == segment.text.count("/)")
+
+
+HTML = (
+    "<h2>Results</h2><p>Run <code>git add -A</code> at 37 °C, see Fig. 3.</p>"
+    "<ul><li>first item</li><li>second item</li></ul>"
+    "<ol><li>alpha</li><li>beta</li></ol>"
+    "<blockquote><p>a quote</p></blockquote>"
+    '<pre><code class="language-python">def f(x):\n'
+    "    return x[0]\n</code></pre>"
+    "<table><tr><th>Name</th><th>Size</th></tr>"
+    "<tr><td>a</td><td>5 mm</td></tr></table>"
+)
+
+
+class TestStructure:
+    def test_html_becomes_typed_segments(self, tmp_path):
+        out = list(prepare(HTML, make_settings(tmp_path), HTML_FORMAT))
+        kinds = [s.kind for s in out]
+        assert kinds[:7] == [
+            Kind.HEADING,
+            Kind.PROSE,
+            Kind.LIST_ITEM,
+            Kind.LIST_ITEM,
+            Kind.LIST_ITEM,
+            Kind.LIST_ITEM,
+            Kind.QUOTE,
+        ]
+        assert Kind.CODE in kinds and Kind.TABLE in kinds
+        heading = out[0]
+        assert heading.text == "Results"
+        assert heading.pause_before == 0.6 and heading.rate == 0.9
+
+    def test_prose_words_are_normalised_but_inline_code_is_not(self, tmp_path):
+        out = list(prepare(HTML, make_settings(tmp_path), HTML_FORMAT))
+        prose = out[1].text
+        assert "git add minus A" in prose
+        assert "thirty-seven degrees Celsius" in prose
+        assert "Figure three" in prose
+        assert "`" not in prose and "\ue000" not in prose
+
+    def test_list_items_pause_and_ordered_ones_count(self, tmp_path):
+        out = list(prepare(HTML, make_settings(tmp_path), HTML_FORMAT))
+        items = [s for s in out if s.kind is Kind.LIST_ITEM]
+        assert [s.text for s in items] == [
+            "first item",
+            "second item",
+            "one, alpha",
+            "two, beta",
+        ]
+        assert all(s.pause_before == 0.25 for s in items)
+
+    def test_code_is_read_at_the_configured_level(self, tmp_path):
+        settings = make_settings(tmp_path)
+        code = [
+            s
+            for s in prepare(HTML, settings, HTML_FORMAT)
+            if s.kind is Kind.CODE
+        ]
+        assert code[0].text == "def f x. return x zero"
+        assert code[0].rate == 0.9 and code[0].voice is None
+        level_two = replace(settings, reading=ReadingSettings(code_level=2))
+        code = [
+            s
+            for s in prepare(HTML, level_two, HTML_FORMAT)
+            if s.kind is Kind.CODE
+        ]
+        assert code[0].text.startswith("def f left paren x right paren colon.")
+
+    def test_tables_announce_their_shape_then_rows(self, tmp_path):
+        out = list(prepare(HTML, make_settings(tmp_path), HTML_FORMAT))
+        table = [s for s in out if s.kind is Kind.TABLE]
+        assert [s.text for s in table] == [
+            "table, two columns, one row",
+            "Name: a, Size: five millimeters",
+        ]
+        assert all(s.pause_before == 0.25 for s in table)
+
+    def test_markdown_in_plain_text_is_structured_too(self, tmp_path):
+        text = "# Title\n\nSome prose.\n\n```sh\nls -la\n```\n"
+        out = list(prepare(text, make_settings(tmp_path)))
+        assert [s.kind for s in out] == [Kind.HEADING, Kind.PROSE, Kind.CODE]
+        assert out[2].text == "ls minus la"
+
+    def test_disabled_reads_html_as_plain_chunks(self, tmp_path):
+        settings = replace(
+            make_settings(tmp_path), reading=ReadingSettings(enabled=False)
+        )
+        assert texts(prepare(HTML, settings, HTML_FORMAT)) == texts(
+            plain_chunker(HTML)
+        )
+
+    def test_non_english_voice_gets_structure_but_no_word_rules(self, tmp_path):
+        settings = replace(
+            make_settings(tmp_path), kokoro=KokoroSettings(voice="ef_dora")
+        )
+        out = list(prepare(HTML, settings, HTML_FORMAT))
+        assert out[0].kind is Kind.HEADING
+        assert "37 °C" in out[1].text and "Fig. 3" in out[1].text
+
+    def test_first_segment_time_does_not_grow_with_the_document(self, tmp_path):
+        settings = make_settings(tmp_path)
+
+        def first_ms(text, format):
+            start = time.perf_counter()
+            next(prepare(text, settings, format))
+            return time.perf_counter() - start
+
+        page_md = "# Title\n\n" + "Some prose here.\n\n- item\n\n" * 400
+        cap_md = "# Title\n\n" + "Some prose here.\n\n- item\n\n" * 45000
+        page_html = "<h1>Title</h1>" + "<p>more words here.</p>" * 400
+        cap_html = "<h1>Title</h1>" + "<p>more words here.</p>" * 50000
+        for page, cap, format in (
+            (page_md, cap_md, None),
+            (page_html, cap_html, HTML_FORMAT),
+        ):
+            assert len(cap) > 1_000_000
+            small = min(first_ms(page, format) for _ in range(3))
+            large = min(first_ms(cap, format) for _ in range(3))
+            assert large < 2.5 * small + 0.01
+
+    def test_no_sentinel_or_broken_markup_in_any_segment(self, tmp_path):
+        text = "Run `x = 1` on E. coli and `y`; see Saccharomyces.\n\n" * 300
+        for segment in prepare(text, make_settings(tmp_path)):
+            assert "\ue000" not in segment.text and "\ue001" not in segment.text
+            assert segment.text.count("[") == segment.text.count("](/")

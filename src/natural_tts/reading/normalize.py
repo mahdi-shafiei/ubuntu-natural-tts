@@ -18,6 +18,11 @@ from natural_tts.config import CITATION_MODES
 from natural_tts.reading import tables
 from natural_tts.reading.lexicon import MARKUP
 from natural_tts.reading.numbers import cardinal, decimal, digits, ordinal, year
+from natural_tts.reading.protected import (
+    protect,
+    split_protected,
+    unprotect,
+)
 
 _NUMBER = r"\d+(?:,\d{3})*(?:\.\d+)?|\.\d+"
 _UNIT_KEYS = sorted(
@@ -644,15 +649,20 @@ def normalize_words(
     if citations not in CITATION_MODES:
         raise ValueError(f"citations must be one of {CITATION_MODES}")
     options = Options(british=british, citations=citations)
-    # Pronunciation markup from the lexicon is passed through untouched.
+    # Protected spans and pronunciation markup pass through untouched.
     pieces: list[str] = []
-    last = 0
-    for markup in MARKUP.finditer(text):
-        pieces.append(_rewrite(text[last : markup.start()], options))
-        pieces.append(markup.group(0))
-        last = markup.end()
-    pieces.append(_rewrite(text[last:], options))
-    return _tidy("".join(pieces), options)
+    for piece, is_protected in split_protected(text):
+        if is_protected:
+            pieces.append(protect(piece))
+            continue
+        last = 0
+        for markup in MARKUP.finditer(piece):
+            pieces.append(_rewrite(piece[last : markup.start()], options))
+            pieces.append(markup.group(0))
+            last = markup.end()
+        pieces.append(_rewrite(piece[last:], options))
+    # The normaliser is the last word pass, so the sentinels come off here.
+    return unprotect(_tidy("".join(pieces), options))
 
 
 def _rewrite(text: str, options: Options) -> str:

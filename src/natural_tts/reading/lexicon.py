@@ -15,6 +15,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from natural_tts.reading.protected import protect, split_protected
 from natural_tts.reading.tables import MISAKI_ALPHABET
 
 PACKAGED_LEXICON = Path(__file__).parent / "data" / "lexicon.toml"
@@ -92,17 +93,22 @@ class Lexicon:
         return Lexicon((*self.entries, *other.entries))
 
     def apply(self, text: str) -> str:
-        """Mark every occurrence of an entry outside existing markup."""
+        """Mark each entry outside existing markup and protected spans."""
         if not self.entries:
             return text
-        pattern: re.Pattern[str] = self._pattern
+        pattern = self._pattern
         pieces: list[str] = []
-        last = 0
-        for markup in MARKUP.finditer(text):
-            pieces.append(self._apply_gap(pattern, text[last : markup.start()]))
-            pieces.append(markup.group(0))
-            last = markup.end()
-        pieces.append(self._apply_gap(pattern, text[last:]))
+        for piece, is_protected in split_protected(text):
+            if is_protected:
+                pieces.append(protect(piece))
+                continue
+            last = 0
+            for markup in MARKUP.finditer(piece):
+                gap = piece[last : markup.start()]
+                pieces.append(self._apply_gap(pattern, gap))
+                pieces.append(markup.group(0))
+                last = markup.end()
+            pieces.append(self._apply_gap(pattern, piece[last:]))
         return "".join(pieces)
 
     def _apply_gap(self, pattern: re.Pattern[str], text: str) -> str:

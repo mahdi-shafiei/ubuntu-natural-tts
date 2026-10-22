@@ -4,67 +4,169 @@ Pure functions only; nothing here imports an engine. The rules were written
 against the project's research notes, with normt2s 0.7.0 (MIT) read as a
 reference implementation and its measured outputs kept as golden rows.
 
-``prepare`` is the hotkey path's entry point. It works window by window so
-the first segment is ready long before a long selection has been read:
-each window is cut at a sentence end, chunked with ``chunk_text``, and each
-chunk is rewritten into words and marked with pronunciations. With
-``reading.enabled = false`` or a non-English voice it yields exactly
-today's chunks.
+``prepare`` is the hotkey path's entry point. A selection (plain text or
+HTML) becomes blocks (``structure``), each block becomes one or more
+segments: prose, headings, list items and quotes go through the lexicon
+and the word rules, chunked as before; code blocks go through the code
+reader; tables announce their shape, then their rows. With
+``reading.enabled = false`` it yields exactly today's chunks; with a
+non-English voice the structure stays and the English word rules do not.
 """
 
 from __future__ import annotations
 
-import functools
 import re
 from collections.abc import Callable, Iterator
 
 from natural_tts.config import CHUNK_MAX_CHARS, FIRST_CHUNK_MIN_CHARS, Settings
+from natural_tts.reading.blocks import Block
+from natural_tts.reading.code import read_code
 from natural_tts.reading.lexicon import Lexicon, load_lexicon, packaged_lexicon
 from natural_tts.reading.normalize import normalize_words
-from natural_tts.segments import Segment
+from natural_tts.reading.numbers import cardinal
+from natural_tts.reading.protected import protect, unprotect
+from natural_tts.reading.structure import blocks
+from natural_tts.segments import Kind, Segment
 from natural_tts.text import chunk_text
 
-# Text is prepared in windows of this many characters, cut at a sentence
-# end, so a 1 MiB selection costs no more before the first word than a page.
-WINDOW_CHARS = 8_000
 _ENGLISH_LANG_CODES = frozenset("ab")
-_SENTENCE_END = re.compile(r"[.!?]\s")
+# Seconds of silence before a segment of each kind, and its speed factor.
+PAUSES: dict[Kind, float] = {
+    Kind.HEADING: 0.6,
+    Kind.LIST_ITEM: 0.25,
+    Kind.QUOTE: 0.25,
+    Kind.CODE: 0.25,
+    Kind.TABLE: 0.25,
+}
+RATES: dict[Kind, float] = {Kind.HEADING: 0.9, Kind.CODE: 0.9}
+_INLINE_CODE = re.compile(r"`([^`\n]{1,500}+)`")
+
+Chunker = Callable[[str, str | None], Iterator[Segment]]
 
 
-def windows(text: str, size: int = WINDOW_CHARS) -> Iterator[str]:
-    """Yield the raw ``text`` in pieces of about ``size`` characters.
-
-    A piece ends after the last sentence end inside the size limit, else at
-    the last whitespace, else at the limit itself (one unbroken word). The
-    caller cleans each piece; nothing here touches the whole text.
-    """
-    start = 0
-    while start < len(text):
-        end = min(len(text), start + size)
-        if end < len(text):
-            ends = [m.end() for m in _SENTENCE_END.finditer(text, start, end)]
-            cut = ends[-1] if ends else _last_space(text, start, end)
-            if cut > start:
-                end = cut
-        yield text[start:end]
-        start = end
-
-
-def _last_space(text: str, start: int, end: int) -> int:
-    for index in range(end - 1, start, -1):
-        if text[index].isspace():
-            return index
-    return end
-
-
-@functools.lru_cache(maxsize=1)
-def _packaged() -> Lexicon:
-    return packaged_lexicon()
+def plain_segments(text: str) -> Iterator[Segment]:
+    """Today's reading: one prose segment per text chunk, no rewriting."""
+    for chunk in chunk_text(text, FIRST_CHUNK_MIN_CHARS, CHUNK_MAX_CHARS):
+        yield Segment(chunk)
 
 
 def lexicon_for(settings: Settings) -> Lexicon:
     """The packaged lexicon with the user's file merged on top."""
     return _packaged().merged(load_lexicon(settings.paths.lexicon_file))
+
+
+_PACKAGED: list[Lexicon] = []
+
+
+def _packaged() -> Lexicon:
+    if not _PACKAGED:
+        _PACKAGED.append(packaged_lexicon())
+    return _PACKAGED[0]
+
+
+class _Reader:
+    """Reads blocks for one settings object (voice, level, citations)."""
+
+    def __init__(self, settings: Settings) -> None:
+        reading, kokoro = settings.reading, settings.kokoro
+        self.english = kokoro.lang_code in _ENGLISH_LANG_CODES
+        self.british = kokoro.lang_code == "b"
+        self.citations = reading.citations
+        self.level = reading.code_level
+        self.lexicon = lexicon_for(settings) if self.english else None
+
+    def segments(self, block: Block) -> Iterator[Segment]:
+        """Turn one block into segments."""
+        if block.kind is Kind.CODE:
+            yield from self._code(block)
+        elif block.kind is Kind.TABLE:
+            yield from self._table(block)
+        else:
+            yield from self._prose(block)
+
+    def _words(self, text: str) -> str:
+        if self.lexicon is not None:
+            text = normalize_words(
+                self.lexicon.apply(text),
+                british=self.british,
+                citations=self.citations,
+            )
+        return unprotect(text)
+
+    def _inline_code(self, match: re.Match[str]) -> str:
+        lines = read_code(match.group(1), language=None, level=self.level)
+        return protect(" ".join(lines))
+
+    def _prose(self, block: Block) -> Iterator[Segment]:
+        text = _INLINE_CODE.sub(self._inline_code, block.text)
+        if block.ordered_index is not None:
+            number = (
+                cardinal(block.ordered_index)
+                if self.english
+                else str(block.ordered_index)
+            )
+            text = f"{number}, {text}"
+        pause = PAUSES.get(block.kind, 0.0)
+        for chunk in chunk_text(text, FIRST_CHUNK_MIN_CHARS, CHUNK_MAX_CHARS):
+            words = self._words(chunk)
+            if words:
+                yield Segment(
+                    words,
+                    kind=block.kind,
+                    pause_before=pause,
+                    rate=RATES.get(block.kind, 1.0),
+                )
+                pause = 0.0
+
+    def _code(self, block: Block) -> Iterator[Segment]:
+        lines = read_code(block.text, language=block.language, level=self.level)
+        group: list[str] = []
+        pause = PAUSES[Kind.CODE]
+        for line in lines:
+            if (
+                group
+                and sum(len(g) + 2 for g in group) + len(line) > CHUNK_MAX_CHARS
+            ):
+                yield Segment(
+                    ". ".join(group),
+                    kind=Kind.CODE,
+                    pause_before=pause,
+                    rate=RATES[Kind.CODE],
+                )
+                group, pause = [], 0.0
+            group.append(line)
+        if group:
+            yield Segment(
+                ". ".join(group),
+                kind=Kind.CODE,
+                pause_before=pause,
+                rate=RATES[Kind.CODE],
+            )
+
+    def _table(self, block: Block) -> Iterator[Segment]:
+        columns = len(block.columns) or max(
+            (len(r) for r in block.rows), default=0
+        )
+        shape = "table, {}, {}".format(
+            _count(columns, "column"), _count(len(block.rows), "row")
+        )
+        yield Segment(shape, kind=Kind.TABLE, pause_before=PAUSES[Kind.TABLE])
+        for row in block.rows:
+            cells = [
+                f"{name}: {cell}" if name else cell
+                for name, cell in zip(
+                    block.columns + ("",) * len(row), row, strict=False
+                )
+            ]
+            words = self._words(", ".join(c for c in cells if c))
+            if words:
+                yield Segment(
+                    words, kind=Kind.TABLE, pause_before=PAUSES[Kind.TABLE]
+                )
+
+
+def _count(n: int, noun: str) -> str:
+    return f"{cardinal(n)} {noun}{'' if n == 1 else 's'}"
 
 
 def prepare(
@@ -74,31 +176,20 @@ def prepare(
 
     Args:
         text: The raw selection or message.
-        settings: Decides whether to normalise (``reading.enabled`` and an
-            English Kokoro voice), the date order and citation handling.
+        settings: Decides whether the front end runs (``reading.enabled``),
+            which word rules apply (an English Kokoro voice), the date
+            order, citation handling and the code verbosity level.
         format: ``None`` for plain text, else the message's MIME type.
     """
-    reading, kokoro = settings.reading, settings.kokoro
-    active = reading.enabled and kokoro.lang_code in _ENGLISH_LANG_CODES
-    lexicon = lexicon_for(settings) if active else None
-    for window in windows(text):
-        chunks = chunk_text(window, FIRST_CHUNK_MIN_CHARS, CHUNK_MAX_CHARS)
-        for chunk in chunks:
-            if lexicon is None:
-                yield Segment(chunk)
-                continue
-            words = normalize_words(
-                lexicon.apply(chunk),
-                british=kokoro.lang_code == "b",
-                citations=reading.citations,
-            )
-            if words:
-                yield Segment(words)
+    if not settings.reading.enabled:
+        yield from plain_segments(text)
+        return
+    reader = _Reader(settings)
+    for block in blocks(text, format):
+        yield from reader.segments(block)
 
 
-def chunker_for(
-    settings: Settings,
-) -> Callable[[str, str | None], Iterator[Segment]]:
+def chunker_for(settings: Settings) -> Chunker:
     """The engine's chunker for these settings: ``prepare`` with them bound."""
 
     def chunker(text: str, format: str | None = None) -> Iterator[Segment]:

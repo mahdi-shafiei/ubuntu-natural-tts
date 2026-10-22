@@ -67,7 +67,9 @@ def structured_windows(text: str, size: int = WINDOW_CHARS) -> Iterator[str]:
     """Cut ``text`` at blank lines outside fences, about ``size`` chars each.
 
     The pieces concatenate back to ``text``. A fence longer than ``size``
-    stays whole; text with no blank line outside a fence is one piece.
+    stays whole. A single line longer than ``size`` (hard-wrapped prose
+    pasted as one line) is cut at sentence ends, else at spaces, so the
+    first piece never waits for the whole selection.
     """
     buffer: list[str] = []
     length = 0
@@ -84,6 +86,12 @@ def structured_windows(text: str, size: int = WINDOW_CHARS) -> Iterator[str]:
                 fence = marker
             elif marker[0] == fence[0] and len(marker) >= len(fence):
                 fence = None
+        if fence is None and len(line) > size:
+            if buffer:
+                yield "".join(buffer)
+                buffer, length = [], 0
+            yield from _split_long_line(line, size)
+            continue
         if length >= size and fence is None and not line.strip():
             buffer.append(line)
             yield "".join(buffer)
@@ -93,6 +101,25 @@ def structured_windows(text: str, size: int = WINDOW_CHARS) -> Iterator[str]:
         length += len(line)
     if buffer:
         yield "".join(buffer)
+
+
+_SENTENCE_END_IN_LINE = re.compile(r"[.!?]\s")
+
+
+def _split_long_line(line: str, size: int) -> Iterator[str]:
+    start = 0
+    while start < len(line):
+        end = min(len(line), start + size)
+        if end < len(line):
+            ends = [
+                m.end()
+                for m in _SENTENCE_END_IN_LINE.finditer(line, start, end)
+            ]
+            cut = ends[-1] if ends else line.rfind(" ", start, end) + 1
+            if cut > start:
+                end = cut
+        yield line[start:end]
+        start = end
 
 
 def looks_like_markdown(window: str) -> bool:

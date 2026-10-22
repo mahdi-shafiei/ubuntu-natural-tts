@@ -6,12 +6,7 @@ import sys
 from collections.abc import Callable, Iterator
 from typing import Protocol
 
-from natural_tts.config import (
-    CHUNK_MAX_CHARS,
-    FIRST_CHUNK_MIN_CHARS,
-    KOKORO_SAMPLE_RATE,
-    Settings,
-)
+from natural_tts.config import KOKORO_SAMPLE_RATE, Settings
 from natural_tts.engine import (
     AudioSink,
     SpeechEngine,
@@ -19,9 +14,8 @@ from natural_tts.engine import (
     report_to_stderr,
 )
 from natural_tts.ipc import STOP_MESSAGE, MessageServer, unframe
-from natural_tts.reading import chunker_for
+from natural_tts.reading import chunker_for, plain_segments
 from natural_tts.segments import Segment
-from natural_tts.text import chunk_text
 
 # 0.1 s of audio per device write keeps "stop" near-instant.
 SLICE_SAMPLES = KOKORO_SAMPLE_RATE // 10
@@ -48,12 +42,8 @@ class WarmSynthesizer(Synthesizer, Protocol):
 
 
 def plain_chunker(text: str, format: str | None = None) -> Iterator[Segment]:
-    """Today's reading: one prose segment per text chunk, no rewriting.
-
-    HTML is read as its raw text here; the reading front end handles it.
-    """
-    for chunk in chunk_text(text, FIRST_CHUNK_MIN_CHARS, CHUNK_MAX_CHARS):
-        yield Segment(chunk)
+    """Today's reading: one prose segment per text chunk, no rewriting."""
+    return plain_segments(text)
 
 
 def announce(message: str) -> None:
