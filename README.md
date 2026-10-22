@@ -324,6 +324,13 @@ Each failing check prints the command that fixes it. Common cases:
 | No sound at all | `doctor` checks that ALSA is routed to your sound server. On PipeWire the fix is `pipewire-alsa`; on PulseAudio it is `libasound2-plugins` (never install `pipewire-alsa` there: it replaces PulseAudio). |
 | Gaps between sentences | Synthesis is slower than playback on this CPU. Reinstall with `./install.sh --gpu` on NVIDIA machines, or raise `kokoro.speed`. |
 | Speech stopped after unplugging headphones | Errors are recovered automatically on the next request; if not, `systemctl --user restart natural-tts-kokoro.service`. |
+| Hotkeys gone from Settings > Keyboard | `doctor` reports them missing; `natural-tts setup` adds them back without touching anything else. Close the Keyboard settings panel first: it can write its own stale copy of the custom-shortcut list over changes made while it is open. |
+| "daemon is not running or still starting" right after an upgrade | `setup` restarts the daemon and the old socket file lingers for a few seconds. Wait for `natural-tts ready` in `journalctl --user -u natural-tts-kokoro.service`, then try again. |
+| A number, unit, date or abbreviation is read in a way you do not want | The reading rules are plain code in `src/natural_tts/reading/`; `reading.enabled = false` in `settings.toml` restores the raw reading, and `reading.citations = "read"` says citation markers. Open an issue with the sentence and what you expected. |
+| A name or term is mispronounced | Add it to `~/.config/natural-tts/lexicon.toml` (see [Configuration](#configuration)) and run `natural-tts apply`. |
+| Code is read with too much or too little punctuation | `reading.code_level` is 1 (operators only), 2 (adds brackets, separators and indentation) or 3 (every symbol). |
+| A web page's headings and lists are read as one paragraph | Only Firefox puts the selection's HTML on the clipboard; Chromium-based browsers hand over plain text, so structure is recognised there only from Markdown markers. Copying with <kbd>Ctrl</kbd>+<kbd>C</kbd> and pressing <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> can help, since the copy clipboard often carries HTML. |
+| Upgrading left the old behaviour running | Since 0.1.2 `./install.sh` restarts the services. On an older install run `natural-tts apply` after `git pull && ./install.sh`. |
 
 Logs: `journalctl --user -u natural-tts-kokoro.service` and
 `journalctl --user -u natural-tts-piper.service`.
@@ -354,7 +361,37 @@ clipboard` and `natural-tts stop` in your keyboard settings. The installer
 uses apt; other distributions need the equivalent packages.
 
 **Can I use a different voice or language?**
-Yes, see [Configuration](#configuration).
+Yes, see [Configuration](#configuration). The structure reading (headings,
+lists, code) works with every Kokoro voice; the English word rules
+(numbers, units, abbreviations, citations) run only for English voices.
+
+**Why does it say "Figure three" when the text says "Fig. 3"?**
+Because that is what a person reading aloud says. Since 0.2.0 the hotkey
+rewrites numbers, dates, units, abbreviations and symbols into words
+before Kokoro sees them, so `p < 0.05` is "p is less than zero point zero
+five" rather than silence for the `<`. Everything is a readable rule; set
+`reading.enabled = false` to hear the raw text instead.
+
+**How do I fix the pronunciation of a word?**
+Put it in `~/.config/natural-tts/lexicon.toml` with Kokoro's phonemes
+(an example is in [Configuration](#configuration)) and run
+`natural-tts apply`. The built-in list covers common species names,
+Latin phrases and gene or method names.
+
+**How is code read?**
+Identifiers are split into words (`get_user_name` is "get user name"),
+numbers are spoken, strings and comments are read as words, and operators
+by name. `reading.code_level` decides how much punctuation you hear. Code
+is recognised in Markdown, HTML, reStructuredText, LaTeX, Org, AsciiDoc,
+shell transcripts, Python prompts, diffs and plain indented code. The code
+voice is the reading voice.
+
+**Does it read math?**
+Inline fragments such as `x²`, `5 ± 2` or `1.5 × 10^-3` are spoken as
+words. Whole LaTeX or MathML expressions are planned for a later release.
+
+**Can I skip citation markers like [12] or (Smith et al., 2019)?**
+They are skipped by default; `reading.citations = "read"` says them.
 
 **How do I uninstall?**
 `./install.sh --uninstall` removes services, configuration changes and
