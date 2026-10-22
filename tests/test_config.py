@@ -185,6 +185,12 @@ class TestDerivedValues:
         paths = make_paths(tmp_path)
         assert paths.lexicon_file == paths.config_dir / "lexicon.toml"
 
+    def test_mathcat_helper_lives_in_the_data_dir(self, tmp_path):
+        paths = make_paths(tmp_path)
+        assert (
+            paths.mathcat_helper == paths.data_dir / "bin/natural-tts-mathcat"
+        )
+
     def test_piper_model_path(self, tmp_path):
         settings = Settings(paths=make_paths(tmp_path))
         assert settings.piper_model == (

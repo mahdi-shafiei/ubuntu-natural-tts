@@ -112,6 +112,11 @@ class Paths:
         return self.config_dir / "settings.toml"
 
     @property
+    def mathcat_helper(self) -> Path:
+        """The MathCAT helper binary installed by ``setup``."""
+        return self.data_dir / "bin/natural-tts-mathcat"
+
+    @property
     def lexicon_file(self) -> Path:
         """The user's pronunciation lexicon (merged over the packaged one)."""
         return self.config_dir / "lexicon.toml"
