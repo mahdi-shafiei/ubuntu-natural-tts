@@ -110,12 +110,6 @@ class TestLatexToMathml:
         assert mathml.startswith("<math") and "\n" not in mathml
         assert "<mfrac>" in mathml
 
-    def test_natural_log_is_named(self):
-        out = latex_to_mathml(r"\ln(x + 1)")
-        assert out is not None
-        assert "<mi>natural log</mi><mo>&#x2061;</mo>" in out
-        assert "<mi>ln</mi>" not in out
-
     def test_set_builder_bar_is_kept(self):
         out = latex_to_mathml(r"\{x \mid x > 2\}")
         assert out is not None and "&#x02223;" in out

@@ -492,6 +492,15 @@ def _unit_run(children: list[ET.Element], start: int) -> tuple[str | None, int]:
             per = True
             index += 1
             continue
+        elif _is(node, "mtext") and _text(node):
+            # \text{m/s}: the unit written as plain text.
+            words_text = _unit_text(_text(node), per)
+            if words_text is None:
+                break
+            parts.append(words_text)
+            per = False
+            index += 1
+            continue
         elif _is(node, "mspace"):
             index += 1
             continue
@@ -514,6 +523,21 @@ def _unit_run(children: list[ET.Element], start: int) -> tuple[str | None, int]:
     if not parts:
         return None, start
     return " ".join(parts), index
+
+
+def _unit_text(text: str, per: bool) -> str | None:
+    """Words for a textual unit such as ``m/s`` or ``kg``; None if not one."""
+    numerator, slash, denominator = text.partition("/")
+    top = unit_words(numerator.strip(), "1" if per else "2")
+    if top is None:
+        return None
+    words = ("per " if per else "") + top
+    if slash:
+        bottom = unit_words(denominator.strip(), "1")
+        if bottom is None:
+            return None
+        words += " per " + bottom
+    return words
 
 
 def _units(parent: ET.Element, children: list[ET.Element]) -> bool:

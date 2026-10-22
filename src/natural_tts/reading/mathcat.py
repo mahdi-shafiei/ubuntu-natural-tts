@@ -20,7 +20,6 @@ from types import TracebackType
 
 DEFAULT_TIMEOUT = 2.0
 # The helper starts in this style; a switch is sent only to leave it.
-HELPER_DEFAULT_STYLE = ("ClearSpeak", "Medium")
 _BREAK = re.compile(r"<break\s+time='(\d+(?:\.\d+)?)(ms|s)'\s*/>")
 _CHARACTER = re.compile(r"<say-as interpret-as='characters'>(.*?)</say-as>")
 _TAG = re.compile(r"<[^>]{1,200}>")
@@ -115,7 +114,9 @@ class MathCat:
         self._timeout = timeout
         self.process: subprocess.Popen[str] | None = None
         self._lines: queue.Queue[str | None] = queue.Queue()
-        self._style: tuple[str, str] | None = None
+        # Preferences in the order they were set; replayed on every start.
+        self._preferences: dict[str, str] = {}
+        self._sent: dict[str, str] = {}
         self.switches = 0
 
     @property
@@ -139,7 +140,7 @@ class MathCat:
     def close(self) -> None:
         """Stop the helper if it is running."""
         process, self.process = self.process, None
-        self._style = None
+        self._sent = {}
         if process is None:
             return
         if process.stdin:
@@ -149,6 +150,13 @@ class MathCat:
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait()
+
+    def set(self, name: str, value: str) -> None:
+        """Set a MathCAT preference, sent before the next expression.
+
+        Preferences survive a helper restart: the client replays them.
+        """
+        self._preferences[name] = value
 
     def speak(
         self,
@@ -160,15 +168,19 @@ class MathCat:
         """Return the pieces for one expression.
 
         Raises:
-            MathCatUnavailable: helper missing, crashed, timed out, or an
-                ``ERROR`` reply (the helper stays up in that last case).
+            MathCatUnavailable: helper missing, crashed, timed out, a refused
+                preference, or an ``ERROR`` reply (the helper stays up then).
         """
         self._ensure_started()
-        if (style, verbosity) != self._style:
-            reply = self._exchange(f"@{style} {verbosity}")
+        self.set("SpeechStyle", style)
+        self.set("Verbosity", verbosity)
+        for name, value in self._preferences.items():
+            if self._sent.get(name) == value:
+                continue
+            reply = self._exchange(f"@{name}={value}")
             if reply != "OK":
-                raise MathCatUnavailable(f"style switch refused: {reply}")
-            self._style = (style, verbosity)
+                raise MathCatUnavailable(f"preference refused: {reply}")
+            self._sent[name] = value
             self.switches += 1
         reply = self._exchange(" ".join(mathml.split()))
         if reply.startswith("ERROR"):
@@ -181,7 +193,7 @@ class MathCat:
         if self.process is not None and self.process.poll() is None:
             return
         self.process = None
-        self._style = None
+        self._sent = {}
         self._lines = queue.Queue()
         env = dict(os.environ, MC_LANG=self._language)
         try:
@@ -201,7 +213,6 @@ class MathCat:
         threading.Thread(
             target=self._pump, args=(self.process, self._lines), daemon=True
         ).start()
-        self._style = HELPER_DEFAULT_STYLE
 
     @staticmethod
     def _pump(
@@ -235,7 +246,7 @@ class MathCat:
 
     def _drop(self, kill: bool = False) -> None:
         process, self.process = self.process, None
-        self._style = None
+        self._sent = {}
         if process is not None and process.poll() is None:
             if kill:
                 process.kill()

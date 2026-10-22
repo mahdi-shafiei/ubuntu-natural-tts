@@ -1,7 +1,7 @@
 # natural-tts-mathcat
 
 A small helper that speaks MathML with [MathCAT](https://github.com/daisy/MathCAT) for the
-natural-tts read-aloud hotkey. One expression per line in, one SSML line out; `@ClearSpeak
+natural-tts read-aloud hotkey. One expression per line in, one SSML line out; `@SpeechStyle=ClearSpeak
 Medium` switches style and verbosity; `MC_LANG` picks the rules language. The MathCAT rules
 are embedded, so the binary has no files to install next to it.
 

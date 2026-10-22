@@ -35,15 +35,28 @@ fn speaks_a_fraction_in_clearspeak_ssml() {
 }
 
 #[test]
+fn preferences_are_name_equals_value_lines() {
+    let lines = run(&format!(
+        "@CapitalLetters_UseWord=false\n{FRACTION}\n@ClearSpeak_Fractions=Over\n{FRACTION}\n@nonsense\n@SpeechStyle Terse\n"
+    ));
+    assert_eq!(lines[0], "OK");
+    assert!(!lines[1].contains("cap "), "{}", lines[1]);
+    assert_eq!(lines[2], "OK");
+    assert!(lines[3].contains(" over "), "{}", lines[3]);
+    assert!(lines[4].starts_with("ERROR"), "{}", lines[4]);
+    assert!(lines[5].starts_with("ERROR"), "{}", lines[5]);
+}
+
+#[test]
 fn switches_style_and_verbosity_on_request() {
     let sum = "<math><mrow><msubsup><mo>&#x2211;</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></msubsup><msub><mi>x</mi><mi>i</mi></msub></mrow></math>";
     let lines = run(&format!(
-        "@SimpleSpeak Terse\n{sum}\n@ClearSpeak Verbose\n{sum}\n"
+        "@SpeechStyle=SimpleSpeak\n@Verbosity=Terse\n{sum}\n@SpeechStyle=ClearSpeak\n@Verbosity=Verbose\n{sum}\n"
     ));
-    assert_eq!(lines[0], "OK");
-    assert_eq!(lines[2], "OK");
-    assert_ne!(lines[1], lines[3], "styles should differ");
-    assert!(lines[3].contains("sum"), "{}", lines[3]);
+    assert_eq!(&lines[..2], ["OK", "OK"]);
+    assert_eq!(&lines[3..5], ["OK", "OK"]);
+    assert_ne!(lines[2], lines[5], "styles should differ");
+    assert!(lines[5].contains("sum"), "{}", lines[5]);
 }
 
 #[test]

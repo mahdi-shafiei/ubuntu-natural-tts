@@ -297,6 +297,17 @@ class TestMath:
         (out,) = texts(prepare("so $\\sqrt{\\frac{a}{b}}$ holds.", settings))
         assert out.startswith("so [SimpleSpeak Verbose]")
 
+    def test_nested_fractions_keep_their_closer(self, tmp_path, fake_helper):
+        chunker = chunker_for(make_settings(tmp_path))
+        assert chunker.mathcat is not None
+        list(chunker("$$\\sqrt{\\frac{a}{b}}$$", None))
+        ((_, words),) = chunker.mathcat.speak("<math>prefs</math>")
+        assert "ClearSpeak_Fractions=OverEndFrac" in words
+        list(chunker("$$\\frac{a}{b}$$", None))
+        ((_, words),) = chunker.mathcat.speak("<math>prefs</math>")
+        assert "ClearSpeak_Fractions=Over" in words
+        chunker.close()
+
     def test_missing_helper_falls_back_to_the_word_rules(self, tmp_path):
         (out,) = texts(
             prepare("where $x^2 + y^2 = r^2$ holds.", make_settings(tmp_path))
@@ -305,6 +316,21 @@ class TestMath:
         text = "Before.\n\n$$a^2$$\n\nAfter."
         kinds = [s.kind for s in prepare(text, make_settings(tmp_path))]
         assert kinds == [Kind.PROSE, Kind.MATH, Kind.PROSE]
+
+    def test_formulas_set_the_expert_reading_preferences(
+        self, tmp_path, fake_helper
+    ):
+        chunker = chunker_for(make_settings(tmp_path))
+        assert chunker.mathcat is not None
+        ((_, words),) = chunker.mathcat.speak("<math>prefs</math>")
+        for name in (
+            "CapitalLetters_UseWord=false",
+            "ClearSpeak_Fractions=Over",
+            "ClearSpeak_ImpliedTimes=None",
+            "ClearSpeak_Log=LnAsNaturalLog",
+        ):
+            assert name in words
+        chunker.close()
 
     def test_one_helper_process_per_chunker(self, tmp_path, fake_helper):
         chunker = chunker_for(make_settings(tmp_path))

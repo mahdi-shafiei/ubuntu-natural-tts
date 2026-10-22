@@ -156,6 +156,11 @@ class TestUnits:
         out = produce(r"3\,\mathrm{m}\,\mathrm{s}^{-1}")
         assert "<mtext>meters per second</mtext>" in out
 
+    def test_text_units_are_words_too(self):
+        out = produce(r"5\,\text{m/s} and 2\,\text{kg}")
+        assert "<mtext>meters per second</mtext>" in out
+        assert "<mtext>kilograms</mtext>" in out
+
     def test_letters_that_are_not_units_stay(self):
         assert "mtext" not in produce(r"5\,\mathrm{abc}")
 

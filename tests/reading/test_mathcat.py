@@ -50,12 +50,29 @@ class TestClient:
         assert client.process is not None
         assert pieces[0][1].startswith("[ClearSpeak Medium] cap A. over")
 
-    def test_switches_style_only_when_it_changes(self, client):
-        client.speak(FRACTION)
-        client.speak(FRACTION, style="SimpleSpeak", verbosity="Terse")
-        pieces = client.speak(FRACTION, style="SimpleSpeak", verbosity="Terse")
-        assert pieces[0][1].startswith("[SimpleSpeak Terse]")
-        assert client.switches == 1
+    def test_preferences_are_sent_only_when_their_value_changes(self, client):
+        client.speak("<math>x</math>")
+        assert client.switches == 2  # SpeechStyle and Verbosity once
+        client.speak("<math>x</math>", style="SimpleSpeak", verbosity="Terse")
+        assert client.switches == 4
+        client.speak("<math>x</math>", style="SimpleSpeak", verbosity="Terse")
+        assert client.switches == 4
+
+    def test_preferences_are_sent_once_and_replayed_after_a_crash(self, client):
+        client.set("CapitalLetters_UseWord", "false")
+        client.set("ClearSpeak_Fractions", "Over")
+        ((_, words),) = client.speak("<math>prefs</math>")
+        assert "CapitalLetters_UseWord=false" in words
+        assert "ClearSpeak_Fractions=Over" in words
+        with pytest.raises(MathCatUnavailable):
+            client.speak("<math>crash</math>")
+        ((_, words),) = client.speak("<math>prefs</math>")
+        assert "ClearSpeak_Fractions=Over" in words
+
+    def test_refused_preference_raises(self, client):
+        client.set("", "x")
+        with pytest.raises(MathCatUnavailable, match="refused"):
+            client.speak("<math>x</math>")
 
     def test_error_lines_raise(self, client):
         with pytest.raises(MathCatUnavailable, match="Invalid MathML"):

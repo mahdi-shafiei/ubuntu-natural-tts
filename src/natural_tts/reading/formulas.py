@@ -29,6 +29,15 @@ LANGUAGES = {"a": "en", "b": "en", "e": "es", "f": "fr", "p": "pt", "z": "zh"}
 STYLES = {"clearspeak": "ClearSpeak", "simplespeak": "SimpleSpeak"}
 # Fractions inside roots, scripts on scripts: Verbose from this depth on.
 VERBOSE_DEPTH = 2
+# MathCAT preferences for the expert register (research notes): no "cap"
+# before capitals, "a over b" for every fraction at Medium, no "times" for
+# juxtaposed factors, "natural log" for ln.
+PREFERENCES: tuple[tuple[str, str], ...] = (
+    ("CapitalLetters_UseWord", "false"),
+    ("ClearSpeak_Fractions", "Over"),
+    ("ClearSpeak_ImpliedTimes", "None"),
+    ("ClearSpeak_Log", "LnAsNaturalLog"),
+)
 _COMMAND = re.compile(r"\\([A-Za-z]+)")
 _TAG = re.compile(r"<[^>]{1,200}>")
 _SPACES = re.compile(r"\s+")
@@ -71,6 +80,9 @@ class Formulas:
         self.mathcat = mathcat
         self._style = STYLES[style]
         self._warned = False
+        if mathcat is not None:
+            for name, value in PREFERENCES:
+                mathcat.set(name, value)
 
     def speak(
         self, text: str, language: str | None
@@ -86,7 +98,12 @@ class Formulas:
         if mathml is None:
             return None
         depth = nesting_depth(mathml)
-        verbosity = "Verbose" if depth >= VERBOSE_DEPTH else "Medium"
+        deep = depth >= VERBOSE_DEPTH
+        verbosity = "Verbose" if deep else "Medium"
+        # Nested fractions need their closer ("end fraction") to keep scope.
+        self.mathcat.set(
+            "ClearSpeak_Fractions", "OverEndFrac" if deep else "Over"
+        )
         try:
             pieces = self.mathcat.speak(
                 mathml, style=self._style, verbosity=verbosity

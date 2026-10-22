@@ -168,12 +168,7 @@ def latex_to_mathml(latex: str) -> str | None:
         mathml = convert(latex)
     except Exception:
         return None
-    # MathCAT spells "<mi>ln</mi>" letter by letter; name it.
-    mathml = mathml.replace("<mi>ln</mi>", _NATURAL_LOG)
     return " ".join(mathml.split())
-
-
-_NATURAL_LOG = "<mi>natural log</mi><mo>&#x2061;</mo>"
 
 
 def _brace_depth(latex: str) -> int:

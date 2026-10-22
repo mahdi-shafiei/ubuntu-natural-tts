@@ -37,16 +37,12 @@ fn configure(language: &str) {
     }
 }
 
-fn switch(spec: &str) -> Result<(), String> {
-    let mut parts = spec.split_whitespace();
-    let (Some(style), Some(verbosity)) = (parts.next(), parts.next()) else {
-        return Err(format!(
-            "expected '@<SpeechStyle> <Verbosity>', got '@{spec}'"
-        ));
-    };
-    set_preference("SpeechStyle", style).map_err(|e| e.to_string())?;
-    set_preference("Verbosity", verbosity).map_err(|e| e.to_string())?;
-    Ok(())
+fn set(spec: &str) -> Result<(), String> {
+    let (name, value) = spec
+        .split_once('=')
+        .filter(|(n, v)| !n.is_empty() && !v.is_empty())
+        .ok_or_else(|| format!("expected '@Name=Value', got '@{spec}'"))?;
+    set_preference(name.trim(), value.trim()).map_err(|e| e.to_string())
 }
 
 fn speak(mathml: &str) -> String {
@@ -78,7 +74,7 @@ fn main() {
             continue;
         }
         let reply = match line.strip_prefix('@') {
-            Some(spec) => match switch(spec) {
+            Some(spec) => match set(spec) {
                 Ok(()) => "OK".to_string(),
                 Err(e) => format!("ERROR {e}"),
             },
