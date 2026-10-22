@@ -48,8 +48,6 @@ sentence.
 > We used a phosphate buffered saline solution at pH 7.4 and 37 °C
 > (n = 3; p < 0.05), see Eq. 2: x = 1.
 
-<!-- media/reading-methods.mp4: drag onto the blank line below on github.com, then delete this comment. -->
-
 
 https://github.com/user-attachments/assets/13c415b6-30db-43bb-b606-b5bb1e233d87
 
@@ -59,8 +57,6 @@ https://github.com/user-attachments/assets/13c415b6-30db-43bb-b606-b5bb1e233d87
 
 > Our neighbour, Dr. Ana Ruiz, moved to St. Paul last spring; her
 > brother, Mr. T. Ruiz, stayed behind.
-
-<!-- media/reading-names.mp4: drag onto the blank line below on github.com, then delete this comment. -->
 
 
 https://github.com/user-attachments/assets/105e4e63-ce28-4e53-863e-1e195562aa34
@@ -73,8 +69,6 @@ https://github.com/user-attachments/assets/105e4e63-ce28-4e53-863e-1e195562aa34
 > In E. coli the gene lacZ is expressed, as Dr. Smith et al. showed in
 > Fig. 3 of the paper, which we read in detail.
 
-<!-- media/reading-paper.mp4: drag onto the blank line below on github.com, then delete this comment. -->
-
 
 https://github.com/user-attachments/assets/4de64001-b591-40fc-a225-a23f3bcbfa55
 
@@ -83,8 +77,6 @@ https://github.com/user-attachments/assets/4de64001-b591-40fc-a225-a23f3bcbfa55
 > The effect was first reported by Chen et al. in 2019 (see Ref. 4;
 > cf. Sec. 3.2), and later confirmed, e.g. by Müller et al., with
 > larger samples (n = 120; p < 0.01).
-
-<!-- media/reading-citations.mp4: drag onto the blank line below on github.com, then delete this comment. -->
 
 
 https://github.com/user-attachments/assets/789baf62-d685-4d0d-9a0a-da9d1c0647e7
