@@ -135,6 +135,11 @@ If something stays silent, run `natural-tts doctor`.
   less than zero point zero five", `Fig. 3` is "Figure three", `E. coli`
   is pronounced correctly, and `[12]` citation markers are skipped. Add
   your own pronunciations in `~/.config/natural-tts/lexicon.toml`.
+- **Reads structure and code.** Headings, lists, quotes and tables get
+  their own pauses; code blocks in Markdown, HTML, reStructuredText,
+  LaTeX, Org, AsciiDoc, prompts and diffs are read as words
+  (`get_user_name(x)` is "get user name x"), with `code_level` choosing
+  how much punctuation you hear.
 - **Fast start, instant stop.** Speech starts after the first short chunk;
   stop takes effect within about a tenth of a second.
 - **Self-healing.** Audio-device or synthesis errors are logged and

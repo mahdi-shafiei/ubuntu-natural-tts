@@ -6,6 +6,36 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-22
+
+### Added
+
+- Structure on the hotkey path: headings, list items (numbered when the
+  list is), quotes and tables are spoken as their own segments with
+  pauses and a slower heading rate; tables announce their shape first.
+  Markdown is read from its block structure, and the selection's HTML is
+  used when the application offers it (Firefox does; Chromium offers
+  plain text), parsed with the standard library and never fetched.
+- Code blocks are read aloud at `reading.code_level` 1, 2 or 3:
+  identifiers split into words, numbers spoken, strings and comments read
+  as words, operators by name, brackets and indentation from level 2.
+  Code is recognised in Markdown fences and indented blocks, HTML `pre`,
+  reStructuredText literal blocks and code directives, LaTeX verbatim,
+  lstlisting and minted, Org mode and AsciiDoc source blocks, Python and
+  IPython prompts, terminal transcripts, unified diffs, a shebang, and
+  dense unmarked code. Inline code is read the same way inside prose.
+- Messages between the hotkey and the daemon carry their format.
+
+### Changed
+
+- Non-English Kokoro voices now get the structure (segments, pauses,
+  code reading) while the English word rules stay English-only.
+- `markdown-it-py` and `Pygments`, already present through Kokoro's
+  dependencies, are declared in the `kokoro` and `dev` extras. The core
+  package and the Speech Dispatcher path stay standard-library only,
+  which a test now proves.
+- The code voice is the reading voice; there is no `code_voice` setting.
+
 ## [0.2.1] - 2026-10-22
 
 ### Fixed
@@ -83,7 +113,8 @@ uses [Semantic Versioning](https://semver.org/).
 - `natural-tts setup`, `apply` and `teardown`, driven by a single
   `~/.config/natural-tts/settings.toml`.
 
-[Unreleased]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.1...v0.1.2
