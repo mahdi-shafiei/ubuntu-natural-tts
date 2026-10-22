@@ -113,6 +113,18 @@ def _kokoro_daemon(ctx: Context) -> Check:
     )
 
 
+def _math_helper(ctx: Context) -> Check:
+    helper = ctx.settings.paths.mathcat_helper
+    fix = "natural-tts apply  (installs the MathCAT helper)"
+    if not helper.exists():
+        return Check("Math helper", False, f"{helper} is missing", fix)
+    result = ctx.runner((str(helper), "--version"))
+    detail = (
+        result.text if result.ok else result.describe((str(helper),))
+    ).strip()
+    return Check("Math helper", result.ok, detail or "no version reply", fix)
+
+
 def _speechd_socket(ctx: Context) -> Check:
     return _service(ctx, "Speech Dispatcher socket", SPEECHD_SOCKET)
 
@@ -209,6 +221,7 @@ CHECKS: tuple[Callable[[Context], Check], ...] = (
     _piper_server,
     _kokoro_service,
     _kokoro_daemon,
+    _math_helper,
     _speechd_socket,
     _speechd_module,
     _default_voice,

@@ -154,7 +154,9 @@ main() {
 
   if [[ $setup -eq 1 ]]; then
     step "Configuring services, Speech Dispatcher and hotkeys"
-    if [[ $hotkeys -eq 1 ]]; then "$CLI" setup; else "$CLI" setup --no-hotkeys; fi
+    local -a setup_args=(setup --helper-source "$SRC_DIR/helper/mathcat")
+    [[ $hotkeys -eq 1 ]] || setup_args+=(--no-hotkeys)
+    "$CLI" "${setup_args[@]}"
   else
     echo "Installed. Run 'natural-tts setup' to configure the desktop."
   fi

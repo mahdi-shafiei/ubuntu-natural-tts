@@ -20,6 +20,10 @@ APP_NAME = "natural-tts"
 # Kokoro always produces 24 kHz mono audio.
 KOKORO_SAMPLE_RATE = 24_000
 KOKORO_REPO_ID = "hexgrad/Kokoro-82M"
+# Release assets (the MathCAT helper binaries) live under <this>/v<version>/.
+RELEASE_DOWNLOADS = (
+    "https://github.com/mahdi-shafiei/ubuntu-natural-tts/releases/download"
+)
 
 # Kokoro is weakest on very short inputs and rushes on very long ones (its
 # VOICES.md recommends roughly 100-200 phoneme tokens), so text is chunked to

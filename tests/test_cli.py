@@ -1,6 +1,8 @@
+import hashlib
 import io
 from dataclasses import replace
 from pathlib import Path
+from urllib.error import URLError
 
 import pytest
 
@@ -10,6 +12,7 @@ from natural_tts.config import (
     DEFAULT_SETTINGS_TOML,
     KOKORO_SERVICE,
     PIPER_SERVICE,
+    RELEASE_DOWNLOADS,
     SPEECHD_MODULE,
 )
 from natural_tts.hotkeys import MEDIA_KEYS_SCHEMA
@@ -24,6 +27,10 @@ from natural_tts.system import Result
 from tests.fakes import LocalHTTPServer, RecordingRunner, make_settings
 
 SYSTEM_CONF = "LogLevel 3\n"
+HELPER_BINARY = b"\x7fELF fake mathcat helper"
+HELPER_URL = (
+    f"{RELEASE_DOWNLOADS}/v{__version__}/natural-tts-mathcat-linux-x86_64"
+)
 
 
 class World:
@@ -41,6 +48,15 @@ class World:
         self.execs: list[tuple[str, list[str]]] = []
         self.daemons: list[object] = []
         self.gsettings_ok = True
+        self.helper_version = __version__
+        self.tools = {"cargo"}
+        self.fetched: list[str] = []
+        self.fetch_error: Exception | None = None
+        digest = hashlib.sha256(HELPER_BINARY).hexdigest()
+        self.downloads = {
+            HELPER_URL: HELPER_BINARY,
+            HELPER_URL + ".sha256": f"{digest}  helper\n".encode(),
+        }
         self.runner = RecordingRunner(self.respond)
         self.stdout, self.stderr = io.StringIO(), io.StringIO()
         system_conf = tmp_path / "etc-speechd.conf"
@@ -56,7 +72,20 @@ class World:
             execv=lambda path, argv: self.execs.append((path, list(argv))),
             run_daemon=self.daemons.append,
             speechd_system_conf=system_conf,
+            fetch=self.fetch,
+            machine="x86_64",
+            which=lambda name: (
+                f"/usr/bin/{name}" if name in self.tools else None
+            ),
         )
+
+    def fetch(self, url):
+        self.fetched.append(url)
+        if self.fetch_error is not None:
+            raise self.fetch_error
+        if url not in self.downloads:
+            raise URLError("404 Not Found")
+        return self.downloads[url]
 
     def respond(self, argv):
         if argv[0] == "gsettings":
@@ -65,6 +94,15 @@ class World:
             if argv[1] == "get" and argv[2] == MEDIA_KEYS_SCHEMA:
                 return Result(0, b"@as []\n", b"")
             return Result(0, b"''\n", b"")
+        if argv[-1] == "--version":
+            return Result(
+                0, f"natural-tts-mathcat {self.helper_version}\n".encode(), b""
+            )
+        if argv[0] == "cargo":
+            manifest = Path(argv[argv.index("--manifest-path") + 1])
+            built = manifest.parent / "target/release/natural-tts-mathcat"
+            built.parent.mkdir(parents=True, exist_ok=True)
+            built.write_bytes(b"built by cargo")
         if "piper.download_voices" in argv:
             voices = Path(argv[argv.index("--data-dir") + 1])
             voices.mkdir(parents=True, exist_ok=True)
@@ -272,6 +310,64 @@ class TestSetup:
             world.paths.speechd_dir / f"modules/{SPEECHD_MODULE}.conf"
         ).exists()
         assert world.paths.settings_file.exists()  # user data is kept
+
+
+class TestMathHelper:
+    def test_setup_downloads_and_verifies_the_helper(self, world):
+        assert world.run("setup") == 0
+        helper = world.paths.mathcat_helper
+        assert helper.read_bytes() == HELPER_BINARY
+        assert helper.stat().st_mode & 0o111
+        assert world.fetched == [HELPER_URL, HELPER_URL + ".sha256"]
+        assert "MathCAT helper" in world.stdout.getvalue()
+
+    def test_current_helper_is_kept(self, world):
+        helper = world.paths.mathcat_helper
+        helper.parent.mkdir(parents=True)
+        helper.write_bytes(b"installed")
+        world.run("setup")
+        assert world.fetched == [] and helper.read_bytes() == b"installed"
+
+    def test_helper_from_another_version_is_replaced(self, world):
+        helper = world.paths.mathcat_helper
+        helper.parent.mkdir(parents=True)
+        helper.write_bytes(b"old")
+        world.helper_version = "0.0.1"
+        world.run("setup")
+        assert helper.read_bytes() == HELPER_BINARY
+
+    def test_checksum_mismatch_stops_setup(self, world):
+        world.downloads[HELPER_URL + ".sha256"] = b"0" * 64 + b"  helper\n"
+        assert world.run("setup") == 1
+        assert "checksum" in world.stderr.getvalue()
+        assert not world.paths.mathcat_helper.exists()
+
+    def test_download_failure_builds_from_source(self, world, tmp_path):
+        world.fetch_error = URLError("offline")
+        source = tmp_path / "helper-src"
+        source.mkdir()
+        (source / "Cargo.toml").write_text("[package]\n")
+        assert world.run("setup", "--helper-source", str(source)) == 0
+        assert world.paths.mathcat_helper.read_bytes() == b"built by cargo"
+        cargo = next(a for a in world.runner.argvs if a[0] == "cargo")
+        assert cargo[1:3] == ("build", "--release")
+        assert "offline" in world.stderr.getvalue()
+
+    def test_without_download_or_cargo_setup_warns_and_continues(
+        self, world, tmp_path
+    ):
+        world.fetch_error = URLError("offline")
+        world.tools = set()
+        assert world.run("setup", "--helper-source", str(tmp_path)) == 0
+        assert not world.paths.mathcat_helper.exists()
+        assert "formulas are read as words" in world.stderr.getvalue()
+
+    def test_apply_installs_a_missing_helper(self, world):
+        world.run("setup")
+        world.paths.mathcat_helper.unlink()
+        world.fetched.clear()
+        assert world.run("apply") == 0
+        assert world.paths.mathcat_helper.exists() and world.fetched
 
 
 class TestSystemdFailure:

@@ -8,9 +8,14 @@ need them.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import math
 import os
+import platform
+import shutil
 import sys
+import urllib.error
+import urllib.request
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,6 +24,7 @@ from typing import BinaryIO, TextIO
 from natural_tts import __version__
 from natural_tts.config import (
     DEFAULT_SETTINGS_TOML,
+    RELEASE_DOWNLOADS,
     Paths,
     Settings,
     SettingsError,
@@ -58,6 +64,13 @@ def _default_paths() -> Paths:
     return Paths.from_env(os.environ)
 
 
+def fetch_url(url: str, timeout: float = 60.0) -> bytes:
+    """Download ``url`` (release assets; the desktop proxy applies)."""
+    with urllib.request.urlopen(url, timeout=timeout) as response:
+        data: bytes = response.read()
+    return data
+
+
 @dataclass
 class Env:
     """Everything a command interacts with (replaced by fakes in tests)."""
@@ -72,6 +85,9 @@ class Env:
     execv: Callable[[str, Sequence[str]], object] = _execv
     run_daemon: Callable[[Settings], object] = _run_kokoro_daemon
     speechd_system_conf: Path = SYSTEM_SPEECHD_CONF
+    fetch: Callable[[str], bytes] = fetch_url
+    machine: str = field(default_factory=platform.machine)
+    which: Callable[[str], str | None] = shutil.which
 
 
 class CommandError(Exception):
@@ -196,11 +212,95 @@ def _ensure_voice(env: Env, settings: Settings) -> None:
         raise CommandError(f"voice download failed: {result.describe(argv)}")
 
 
-def _configure(env: Env, settings: Settings) -> None:
+_HELPER_NAME = "natural-tts-mathcat"
+_NO_HELPER = (
+    "warning: MathCAT helper not installed; formulas are read as words. "
+    "Run natural-tts apply when online to retry."
+)
+
+
+def _mathcat_is_current(env: Env, helper: Path) -> bool:
+    if not helper.exists():
+        return False
+    result = env.runner((str(helper), "--version"))
+    return result.ok and result.text.split()[-1:] == [__version__]
+
+
+def _download_mathcat(env: Env) -> bytes | None:
+    url = (
+        f"{RELEASE_DOWNLOADS}/v{__version__}/{_HELPER_NAME}-linux-{env.machine}"
+    )
+    try:
+        binary = env.fetch(url)
+        digest = env.fetch(url + ".sha256")
+    except (urllib.error.URLError, OSError) as exc:
+        print(
+            f"warning: could not download the MathCAT helper: {exc}",
+            file=env.stderr,
+        )
+        return None
+    expected = digest.decode("ascii", "replace").split()[:1]
+    if expected != [hashlib.sha256(binary).hexdigest()]:
+        raise CommandError(
+            f"MathCAT helper checksum mismatch for {url}; not installed"
+        )
+    return binary
+
+
+def _build_mathcat(env: Env, source: Path | None) -> bytes | None:
+    if source is None or not (source / "Cargo.toml").exists():
+        return None
+    if env.which("cargo") is None:
+        print(
+            "warning: cargo not found; cannot build the helper", file=env.stderr
+        )
+        return None
+    print(
+        "Building the MathCAT helper with cargo (a few minutes) ...",
+        file=env.stdout,
+    )
+    argv = (
+        "cargo",
+        "build",
+        "--release",
+        "--manifest-path",
+        str(source / "Cargo.toml"),
+    )
+    result = env.runner(argv)
+    built = source / "target/release" / _HELPER_NAME
+    if not result.ok or not built.exists():
+        print(f"warning: {result.describe(argv)}", file=env.stderr)
+        return None
+    return built.read_bytes()
+
+
+def _ensure_mathcat(env: Env, settings: Settings, source: Path | None) -> None:
+    """Install the release's helper binary, or build it; warn if neither."""
+    helper = settings.paths.mathcat_helper
+    if _mathcat_is_current(env, helper):
+        return
+    print("Installing the MathCAT helper ...", file=env.stdout)
+    binary = _download_mathcat(env)
+    if binary is None:
+        binary = _build_mathcat(env, source)
+    if binary is None:
+        print(_NO_HELPER, file=env.stderr)
+        return
+    helper.parent.mkdir(parents=True, exist_ok=True)
+    staged = helper.with_name(helper.name + ".new")
+    staged.write_bytes(binary)
+    staged.chmod(0o755)
+    staged.replace(helper)
+
+
+def _configure(
+    env: Env, settings: Settings, helper_source: Path | None = None
+) -> None:
     from natural_tts.speechd import install_speechd
     from natural_tts.systemd import install_units
 
     _ensure_voice(env, settings)
+    _ensure_mathcat(env, settings, helper_source)
     cli = str(settings.paths.cli)
     for warning in install_speechd(settings, cli, env.speechd_system_conf):
         print(f"warning: {warning}", file=env.stderr)
@@ -249,7 +349,7 @@ def cmd_setup(args: argparse.Namespace, env: Env, settings: Settings) -> int:
     if not settings_file.exists():
         settings_file.parent.mkdir(parents=True, exist_ok=True)
         settings_file.write_text(DEFAULT_SETTINGS_TOML)
-    _configure(env, settings)
+    _configure(env, settings, args.helper_source)
     activate(env.runner)
     if not args.no_hotkeys:
         _install_hotkeys(env, settings)
@@ -328,6 +428,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-hotkeys",
         action="store_true",
         help="do not add GNOME keyboard shortcuts",
+    )
+    p.add_argument(
+        "--helper-source",
+        type=Path,
+        default=None,
+        metavar="DIR",
+        help="Cargo project to build the MathCAT helper from when the "
+        "release download fails (install.sh passes helper/mathcat)",
     )
     add("apply", cmd_apply, "apply settings.toml and restart services")
     add("doctor", cmd_doctor, "diagnose problems and suggest fixes")

@@ -17,6 +17,7 @@ class FakeSystem:
         self.aplay = "default\npipewire\n"
         self.server = "Server Name: PulseAudio (on PipeWire 1.0.5)\n"
         self.hotkeys = "[" + ", ".join(f"'{h.path}'" for h in HOTKEYS) + "]"
+        self.helper_ok = True
 
     def __call__(self, argv, *, stdin=None, timeout=None):
         argv = tuple(argv)
@@ -26,6 +27,10 @@ class FakeSystem:
             return Result(
                 0 if state == "active" else 3, f"{state}\n".encode(), b""
             )
+        if argv[-1:] == ("--version",):
+            if not self.helper_ok:
+                return Result(127, b"", b"cannot execute binary file")
+            return Result(0, b"natural-tts-mathcat 0.4.0\n", b"")
         if argv == ("spd-say", "-O"):
             return Result(0, self.modules.encode(), b"")
         if argv == ("aplay", "-L"):
@@ -53,6 +58,8 @@ def ctx(tmp_path):
     (sd / "modules/piper-generic.conf").write_text("x")
     paths.kokoro_socket.parent.mkdir(parents=True)
     paths.kokoro_socket.write_text("")
+    paths.mathcat_helper.parent.mkdir(parents=True)
+    paths.mathcat_helper.write_bytes(b"helper")
     return Context(
         settings=settings,
         runner=FakeSystem(),
@@ -110,6 +117,19 @@ class TestRunChecks:
     def test_missing_voice(self, ctx):
         ctx.settings.piper_model.unlink()
         assert "natural-tts apply" in failed(ctx)["Piper voice"].fix
+
+    def test_math_helper_missing(self, ctx):
+        ctx.settings.paths.mathcat_helper.unlink()
+        check = failed(ctx)["Math helper"]
+        assert "natural-tts apply" in check.fix
+
+    def test_math_helper_that_does_not_run(self, ctx):
+        ctx.runner.helper_ok = False
+        assert "cannot execute" in failed(ctx)["Math helper"].detail
+
+    def test_math_helper_reports_its_version(self, ctx):
+        check = by_name(run_checks(ctx))["Math helper"]
+        assert check.ok and "0.4.0" in check.detail
 
     def test_speechd_module_missing(self, ctx):
         ctx.runner.modules = "OUTPUT MODULES\nespeak-ng\n"
