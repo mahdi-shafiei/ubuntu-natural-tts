@@ -6,6 +6,15 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+
+- The gsettings integration test ran on the developer's own D-Bus session
+  and its cleanup reset the desktop's whole custom-shortcut list. It now
+  runs on a private session with a private dconf database and checks that
+  the desktop's list is untouched.
+- The normaliser throughput test used an absolute budget that a shared CI
+  runner could miss by a few milliseconds; it is a ratio test now.
+
 ## [0.4.0] - 2026-10-22
 
 ### Added
