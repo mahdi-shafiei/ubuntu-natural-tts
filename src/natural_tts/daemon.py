@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import sys
 from collections.abc import Callable, Iterator
 from typing import Protocol
@@ -19,6 +20,7 @@ from natural_tts.engine import (
     report_to_stderr,
 )
 from natural_tts.ipc import STOP_MESSAGE, MessageServer
+from natural_tts.reading import prepare
 from natural_tts.segments import Segment
 from natural_tts.text import chunk_text
 
@@ -92,7 +94,7 @@ def run(
     engine = SpeechEngine(
         synthesizer,
         sink,
-        chunker=plain_chunker,
+        chunker=functools.partial(prepare, settings=settings),
         slice_len=SLICE_SAMPLES,
         on_error=report_to_stderr,
     )

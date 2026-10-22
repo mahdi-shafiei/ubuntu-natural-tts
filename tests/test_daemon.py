@@ -56,11 +56,13 @@ def test_blank_messages_only_stop(tmp_path):
 class FakeSynth:
     def __init__(self):
         self.warmed = False
+        self.spoken = []
 
     def warm_up(self):
         self.warmed = True
 
     def synthesize(self, segments):
+        self.spoken += [segment.text for segment in segments]
         return iter([])
 
 
@@ -83,14 +85,16 @@ def test_run_warms_up_before_listening_and_reports_ready(tmp_path):
 
     def keep_running():
         calls[0] += 1
-        return calls[0] == 1  # handle exactly one message
+        return calls[0] <= 2  # one text, then the stop message
+
+    def send_both():
+        send_message(paths.kokoro_socket, "See Fig. 3 in E. coli.")
+        send_message(paths.kokoro_socket, STOP_MESSAGE)
 
     def on_ready(msg):
         assert synth.warmed  # model loaded before the socket opens
         ready.append(msg)
-        threading.Thread(
-            target=send_message, args=(paths.kokoro_socket, STOP_MESSAGE)
-        ).start()
+        threading.Thread(target=send_both).start()
 
     run(
         settings,
@@ -101,6 +105,8 @@ def test_run_warms_up_before_listening_and_reports_ready(tmp_path):
     )
     assert ready == ["natural-tts ready (voice af_heart, speed 1.0)"]
     assert not paths.kokoro_socket.exists()
+    # The reading front end is wired in: words and pronunciation markup.
+    assert synth.spoken == ["See Figure three in [E. coli](/ˌi kˈOlI/)."]  # noqa: RUF001
 
 
 def test_ready_message_is_flushed_for_the_journal(monkeypatch):

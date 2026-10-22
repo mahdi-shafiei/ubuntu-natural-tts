@@ -112,6 +112,11 @@ class Paths:
         return self.config_dir / "settings.toml"
 
     @property
+    def lexicon_file(self) -> Path:
+        """The user's pronunciation lexicon (merged over the packaged one)."""
+        return self.config_dir / "lexicon.toml"
+
+    @property
     def kokoro_socket(self) -> Path:
         """Unix socket the Kokoro daemon listens on."""
         return self.runtime_dir / "kokoro.sock"

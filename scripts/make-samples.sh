@@ -27,7 +27,7 @@ import numpy as np
 import soundfile as sf
 
 from natural_tts.config import Paths, load_settings
-from natural_tts.daemon import plain_chunker
+from natural_tts.reading import prepare
 from natural_tts.kokoro_backend import KokoroSynthesizer
 from natural_tts.piper import cli_command
 
@@ -40,7 +40,7 @@ with open(f"{work}/piper.wav", "wb") as f:
     f.write(wav)
 synth = KokoroSynthesizer.load(settings.kokoro)
 sf.write(f"{work}/kokoro.wav",
-         np.concatenate(list(synth.synthesize(plain_chunker(text)))), 24000)
+         np.concatenate(list(synth.synthesize(prepare(text, settings)))), 24000)
 PY
 
 for name in espeak piper kokoro; do

@@ -163,6 +163,10 @@ class TestDerivedValues:
         assert KokoroSettings(voice="af_heart").lang_code == "a"
         assert KokoroSettings(voice="bm_george").lang_code == "b"
 
+    def test_lexicon_file_lives_in_the_config_dir(self, tmp_path):
+        paths = make_paths(tmp_path)
+        assert paths.lexicon_file == paths.config_dir / "lexicon.toml"
+
     def test_piper_model_path(self, tmp_path):
         settings = Settings(paths=make_paths(tmp_path))
         assert settings.piper_model == (

@@ -124,7 +124,6 @@ UNITS: dict[str, tuple[str, str]] = {
     "fps": ("frames per second", ""),
     "mph": ("miles per hour", ""),
     "ft": ("foot", "feet"),
-    "in": ("inch", "inches"),
     "lb": ("pound", "pounds"),
     "oz": ("ounce", "ounces"),
     "wt%": ("weight percent", ""),
@@ -171,8 +170,7 @@ PREFIXES: dict[str, str] = {
     "G": "giga",
     "T": "tera",
 }
-# "in" and "M" and "b" are too ambiguous to expand when ambiguous contexts are
-# likely; they expand only directly after a number with no letter following.
+# "in" (inch) is deliberately absent: "Fig. 3 in E. coli" must stay "in".
 
 CURRENCIES: dict[str, tuple[str, str, str, str]] = {
     "$": ("dollar", "dollars", "cent", "cents"),
