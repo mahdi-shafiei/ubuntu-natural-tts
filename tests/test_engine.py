@@ -11,7 +11,7 @@ from natural_tts.text import chunk_text
 SLICE = 10  # samples per write; tiny so tests can interrupt mid-chunk
 
 
-def chunker(text: str):
+def chunker(text: str, format=None):
     """The daemon's default shape: one prose segment per text chunk."""
     return (Segment(chunk) for chunk in chunk_text(text, 10, 40))
 
@@ -115,7 +115,7 @@ class TestSpeechEngine:
         # starts: only the first segment is taken synchronously.
         pulled = []
 
-        def lazy(text):
+        def lazy(text, format=None):
             for i in range(3):
                 pulled.append(i)
                 yield Segment(f"part {i}.")

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import functools
 import sys
 from collections.abc import Callable, Iterator
 from typing import Protocol
@@ -19,8 +18,8 @@ from natural_tts.engine import (
     Synthesizer,
     report_to_stderr,
 )
-from natural_tts.ipc import STOP_MESSAGE, MessageServer
-from natural_tts.reading import prepare
+from natural_tts.ipc import STOP_MESSAGE, MessageServer, unframe
+from natural_tts.reading import chunker_for
 from natural_tts.segments import Segment
 from natural_tts.text import chunk_text
 
@@ -31,8 +30,8 @@ SLICE_SAMPLES = KOKORO_SAMPLE_RATE // 10
 class Engine(Protocol):
     """The part of ``SpeechEngine`` the server loop needs."""
 
-    def submit(self, text: str) -> None:
-        """Speak text, interrupting current speech."""
+    def submit(self, text: str, format: str | None = None) -> None:
+        """Speak text (or HTML), interrupting current speech."""
         ...
 
     def stop(self) -> None:
@@ -48,8 +47,11 @@ class WarmSynthesizer(Synthesizer, Protocol):
         ...
 
 
-def plain_chunker(text: str) -> Iterator[Segment]:
-    """Today's reading: one prose segment per text chunk, no rewriting."""
+def plain_chunker(text: str, format: str | None = None) -> Iterator[Segment]:
+    """Today's reading: one prose segment per text chunk, no rewriting.
+
+    HTML is read as its raw text here; the reading front end handles it.
+    """
     for chunk in chunk_text(text, FIRST_CHUNK_MIN_CHARS, CHUNK_MAX_CHARS):
         yield Segment(chunk)
 
@@ -70,11 +72,11 @@ def serve(
 ) -> None:
     """Dispatch incoming messages to ``engine`` until told to stop."""
     while keep_running():
-        message = server.receive()
-        if message == STOP_MESSAGE or not message.strip():
+        body, format = unframe(server.receive())
+        if body == STOP_MESSAGE or not body.strip():
             engine.stop()
         else:
-            engine.submit(message)
+            engine.submit(body, format)
 
 
 def run(
@@ -94,7 +96,7 @@ def run(
     engine = SpeechEngine(
         synthesizer,
         sink,
-        chunker=functools.partial(prepare, settings=settings),
+        chunker=chunker_for(settings),
         slice_len=SLICE_SAMPLES,
         on_error=report_to_stderr,
     )

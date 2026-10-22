@@ -24,7 +24,13 @@ from natural_tts.config import (
     SettingsError,
     load_settings,
 )
-from natural_tts.ipc import STOP_MESSAGE, DaemonNotRunningError, send_message
+from natural_tts.ipc import (
+    HTML_FORMAT,
+    STOP_MESSAGE,
+    DaemonNotRunningError,
+    frame,
+    send_message,
+)
 from natural_tts.selection import Selection, Source, read_selection
 from natural_tts.system import Runner, run
 from natural_tts.systemd import SystemdError
@@ -93,7 +99,10 @@ def cmd_read(args: argparse.Namespace, env: Env, settings: Settings) -> int:
     """Read the highlighted text or the clipboard aloud."""
     selection = env.read(Source(args.source), env.runner)
     if selection.text.strip():
-        _send(env, settings, selection.text)
+        if selection.html is not None:
+            _send(env, settings, frame(selection.html, HTML_FORMAT))
+        else:
+            _send(env, settings, selection.text)
     return 0
 
 

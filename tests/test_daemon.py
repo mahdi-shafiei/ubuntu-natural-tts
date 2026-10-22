@@ -11,8 +11,10 @@ class RecordingEngine:
     def __init__(self):
         self.events = []
 
-    def submit(self, text):
-        self.events.append(("submit", text))
+    def submit(self, text, format=None):
+        self.events.append(
+            ("submit", text) if format is None else ("submit", text, format)
+        )
 
     def stop(self):
         self.events.append(("stop",))
@@ -45,6 +47,20 @@ def test_text_is_submitted_and_stop_stops(tmp_path):
         ("stop",),
         ("submit", "Again."),
     ]
+
+
+def test_html_messages_reach_the_engine_with_their_format(tmp_path):
+    from natural_tts.ipc import HTML_FORMAT, frame
+
+    engine = RecordingEngine()
+    run_serve(tmp_path / "s/k.sock", engine, [frame("<p>Hi</p>", HTML_FORMAT)])
+    assert engine.events == [("submit", "<p>Hi</p>", HTML_FORMAT)]
+
+
+def test_unknown_header_only_stops(tmp_path):
+    engine = RecordingEngine()
+    run_serve(tmp_path / "s/k.sock", engine, ["\x00FORMAT image/png\nblob"])
+    assert engine.events == [("stop",)]
 
 
 def test_blank_messages_only_stop(tmp_path):

@@ -5,7 +5,7 @@ from types import GeneratorType
 
 from natural_tts.config import KokoroSettings, ReadingSettings
 from natural_tts.daemon import plain_chunker
-from natural_tts.reading import prepare
+from natural_tts.reading import chunker_for, prepare
 from natural_tts.segments import Kind, Segment
 from tests.fakes import make_settings
 
@@ -14,6 +14,13 @@ TEXT = "In E. coli the gene lacZ is expressed, as Dr. Smith showed in Fig. 3."
 
 def texts(segments):
     return [s.text for s in segments]
+
+
+class TestChunkerFor:
+    def test_binds_the_settings_and_passes_the_format(self, tmp_path):
+        chunker = chunker_for(make_settings(tmp_path))
+        (segment,) = list(chunker("See Fig. 3.", None))
+        assert segment.text == "See Figure three."
 
 
 class TestPrepare:

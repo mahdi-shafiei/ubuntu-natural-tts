@@ -29,8 +29,9 @@ from natural_tts.segments import Segment
 # Audio samples: anything supporting len() and slicing (e.g. a NumPy array).
 Samples = Any
 ErrorReporter = Callable[[str], None]
-# Turns a selection into segments; pulled lazily so speech starts early.
-Chunker = Callable[[str], Iterator[Segment]]
+# Turns a selection (text, or another format named by the message) into
+# segments; pulled lazily so speech starts early.
+Chunker = Callable[[str, str | None], Iterator[Segment]]
 
 
 class Synthesizer(Protocol):
@@ -144,15 +145,20 @@ class SpeechEngine:
 
     # -- public API ----------------------------------------------------------
 
-    def submit(self, text: str) -> None:
+    def submit(self, text: str, format: str | None = None) -> None:
         """Speak ``text``, interrupting anything currently playing.
+
+        Args:
+            text: The selection, or a document in ``format``.
+            format: ``None`` for plain text, else a MIME type such as
+                ``text/html`` that the chunker understands.
 
         Raises:
             RuntimeError: if the engine has been closed.
         """
         if self._closed:
             raise RuntimeError("SpeechEngine is closed")
-        segments = self._chunker(text)
+        segments = self._chunker(text, format)
         first = next(segments, None)
         with self._cond:
             generation = self._cancel_locked()

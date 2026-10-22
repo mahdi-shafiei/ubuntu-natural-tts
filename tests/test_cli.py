@@ -13,7 +13,12 @@ from natural_tts.config import (
     SPEECHD_MODULE,
 )
 from natural_tts.hotkeys import MEDIA_KEYS_SCHEMA
-from natural_tts.ipc import STOP_MESSAGE, DaemonNotRunningError
+from natural_tts.ipc import (
+    HTML_FORMAT,
+    STOP_MESSAGE,
+    DaemonNotRunningError,
+    frame,
+)
 from natural_tts.selection import Selection, Source
 from natural_tts.system import Result
 from tests.fakes import LocalHTTPServer, RecordingRunner, make_settings
@@ -87,6 +92,11 @@ class TestReadAloud:
     def test_read_selection_sends_highlighted_text(self, world):
         assert world.run("read", "selection") == 0
         assert world.sent == ["highlighted"]
+
+    def test_read_sends_html_with_its_format_when_offered(self, world):
+        world.selection[Source.SELECTION] = Selection("hi", "<p>hi</p>")
+        assert world.run("read", "selection") == 0
+        assert world.sent == [frame("<p>hi</p>", HTML_FORMAT)]
 
     def test_read_clipboard_sends_clipboard(self, world):
         assert world.run("read", "clipboard") == 0

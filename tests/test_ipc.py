@@ -6,11 +6,14 @@ import threading
 import pytest
 
 from natural_tts.ipc import (
+    HTML_FORMAT,
     MAX_MESSAGE_BYTES,
     STOP_MESSAGE,
     DaemonNotRunningError,
     MessageServer,
+    frame,
     send_message,
+    unframe,
 )
 
 
@@ -101,3 +104,29 @@ class TestPrivateDir:
     def test_receive_outside_context_is_an_error(self, sock_path):
         with pytest.raises(RuntimeError, match="outside its context"):
             MessageServer(sock_path).receive()
+
+
+class TestFormatHeader:
+    def test_plain_text_is_sent_as_is(self):
+        assert frame("hello", None) == "hello"
+        assert unframe("hello") == ("hello", None)
+
+    def test_html_gets_a_nul_header_that_text_cannot_contain(self):
+        message = frame("<p>hi</p>", HTML_FORMAT)
+        assert message.startswith("\x00FORMAT text/html\n")
+        assert unframe(message) == ("<p>hi</p>", HTML_FORMAT)
+
+    def test_stop_is_not_a_format(self):
+        assert unframe(STOP_MESSAGE) == (STOP_MESSAGE, None)
+
+    def test_unknown_nul_header_is_an_empty_message(self):
+        # A future or corrupt header must stop speech, not be spoken.
+        assert unframe("\x00FORMAT image/png\nblob") == ("", None)
+        assert unframe("\x00garbage") == ("", None)
+
+    def test_round_trip_over_the_socket(self, sock_path):
+        with MessageServer(sock_path) as server:
+            received, t = serve_one(server)
+            send_message(sock_path, frame("<b>x</b>", HTML_FORMAT))
+            t.join(5)
+        assert unframe(received[0]) == ("<b>x</b>", HTML_FORMAT)

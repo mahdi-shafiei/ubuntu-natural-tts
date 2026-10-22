@@ -15,6 +15,10 @@ from types import TracebackType
 
 # A message starting with NUL can never come from selected text.
 STOP_MESSAGE = "\x00STOP"
+# Messages in another format carry a NUL header line naming it.
+HTML_FORMAT = "text/html"
+_FORMAT_HEADER = "\x00FORMAT "
+_KNOWN_FORMATS = frozenset({HTML_FORMAT})
 # Upper bound on one message (~1 MiB of text, i.e. a long article).
 MAX_MESSAGE_BYTES = 1 << 20
 _RECV_CHUNK = 65536
@@ -109,3 +113,28 @@ def send_message(path: Path, message: str) -> None:
         with contextlib.suppress(BrokenPipeError, ConnectionResetError):
             sock.sendall(message.encode("utf-8"))
             sock.shutdown(socket.SHUT_WR)
+
+
+def frame(body: str, format: str | None) -> str:
+    """Wrap ``body`` for the socket: plain text as is, else with a header."""
+    if format is None:
+        return body
+    return f"{_FORMAT_HEADER}{format}\n{body}"
+
+
+def unframe(message: str) -> tuple[str, str | None]:
+    """Split a received message into ``(body, format)``.
+
+    STOP and plain text pass through with format ``None``. A NUL header
+    naming an unknown format, or any other NUL-led message, becomes an
+    empty body so the daemon only stops speech instead of speaking it.
+    """
+    if message == STOP_MESSAGE or not message.startswith("\x00"):
+        return message, None
+    header, newline, body = message.partition("\n")
+    format = header.removeprefix(_FORMAT_HEADER)
+    if not newline or not header.startswith(_FORMAT_HEADER):
+        return "", None
+    if format not in _KNOWN_FORMATS:
+        return "", None
+    return body, format

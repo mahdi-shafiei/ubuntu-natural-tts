@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import functools
 import re
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 
 from natural_tts.config import CHUNK_MAX_CHARS, FIRST_CHUNK_MIN_CHARS, Settings
 from natural_tts.reading.lexicon import Lexicon, load_lexicon, packaged_lexicon
@@ -67,13 +67,16 @@ def lexicon_for(settings: Settings) -> Lexicon:
     return _packaged().merged(load_lexicon(settings.paths.lexicon_file))
 
 
-def prepare(text: str, settings: Settings) -> Iterator[Segment]:
+def prepare(
+    text: str, settings: Settings, format: str | None = None
+) -> Iterator[Segment]:
     """Turn a selection into segments, lazily.
 
     Args:
         text: The raw selection or message.
         settings: Decides whether to normalise (``reading.enabled`` and an
             English Kokoro voice), the date order and citation handling.
+        format: ``None`` for plain text, else the message's MIME type.
     """
     reading, kokoro = settings.reading, settings.kokoro
     active = reading.enabled and kokoro.lang_code in _ENGLISH_LANG_CODES
@@ -91,3 +94,14 @@ def prepare(text: str, settings: Settings) -> Iterator[Segment]:
             )
             if words:
                 yield Segment(words)
+
+
+def chunker_for(
+    settings: Settings,
+) -> Callable[[str, str | None], Iterator[Segment]]:
+    """The engine's chunker for these settings: ``prepare`` with them bound."""
+
+    def chunker(text: str, format: str | None = None) -> Iterator[Segment]:
+        return prepare(text, settings, format)
+
+    return chunker
