@@ -113,6 +113,25 @@ def _kokoro_daemon(ctx: Context) -> Check:
     )
 
 
+def _kokoro_fallback(ctx: Context) -> Check:
+    # Camel-case names are left to the engine, whose unknown halves ("Py"
+    # in PyTorch) are read by misaki's espeak fallback; without it they
+    # are dropped silently.
+    python = ctx.settings.paths.venv_python
+    result = ctx.runner((str(python), "-c", "import misaki.espeak"))
+    detail = (
+        "misaki.espeak imports"
+        if result.ok
+        else result.describe((str(python),))
+    )
+    return Check(
+        "Kokoro fallback",
+        result.ok,
+        detail.strip(),
+        "reinstall with ./install.sh (the kokoro extra brings the fallback)",
+    )
+
+
 def _math_helper(ctx: Context) -> Check:
     helper = ctx.settings.paths.mathcat_helper
     fix = "natural-tts apply  (installs the MathCAT helper)"
@@ -221,6 +240,7 @@ CHECKS: tuple[Callable[[Context], Check], ...] = (
     _piper_server,
     _kokoro_service,
     _kokoro_daemon,
+    _kokoro_fallback,
     _math_helper,
     _speechd_socket,
     _speechd_module,

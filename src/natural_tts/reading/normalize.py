@@ -469,13 +469,20 @@ def _symbols(text: str, _: Options) -> str:
 # -- mixed tokens, formulas ----------------------------------------------------
 
 
+# A formula without a count is short (NaOH, KOH); six element-looking
+# letters (AmWINS, OCSiAl) are a name.
+_FORMULA_MAX_LETTERS = 5
+
+
 def _formula_groups(token: str) -> list[str] | None:
     groups = re.findall(r"[A-Z][a-z]?\d*", token)
     if "".join(groups) != token or len(groups) < 2:
         return None
     if any(g.rstrip("0123456789") not in tables.ELEMENTS for g in groups):
         return None
-    if not any(ch.isdigit() for ch in token) and len(groups) < 3:
+    if not any(ch.isdigit() for ch in token) and (
+        len(groups) < 3 or len(token) > _FORMULA_MAX_LETTERS
+    ):
         return None
     return groups
 

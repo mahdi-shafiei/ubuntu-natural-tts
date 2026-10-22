@@ -126,3 +126,119 @@ misaki = "ᵻlˈIzə"
 head = "IEEE"
 match = "exact"
 words = "I triple E"
+
+# -- company and product names the engine misread (review of 2026-10-22) ----
+
+# vendor pronunciation, Wiktionary /ˈʃaʊ.mi/
+[[entry]]
+head = "Xiaomi"
+misaki = "ʃˌWmˈi"
+match = "exact"
+
+# Wiktionary /ˈhwɑː.weɪ/ (decision D2)
+[[entry]]
+head = "Huawei"
+misaki = "hwˈɑwˌA"
+match = "exact"
+
+# named for Jupiter; the engine said jup-eye-ter
+[[entry]]
+head = "Jupyter"
+misaki = "ʤˈupətəɹ"
+match = "exact"
+
+# Qt Company: 'cute'
+[[entry]]
+head = "Qt"
+misaki = "kjˈut"
+match = "exact"
+
+# keras.io FAQ: Greek κέρας
+[[entry]]
+head = "Keras"
+misaki = "kˈɛɹæs"
+match = "exact"
+
+# vendor: 'she-in'
+[[entry]]
+head = "Shein"
+misaki = "ʃˈiˌɪn"
+match = "exact"
+
+# vendor: air-B-N-B
+[[entry]]
+head = "Airbnb"
+misaki = "ˌɛɹbˌiˌɛnbˈi"
+match = "exact"
+
+# vendor: two syllables
+[[entry]]
+head = "Porsche"
+misaki = "pˈɔɹʃə"
+match = "exact"
+
+# vendor: ay-SOOS
+[[entry]]
+head = "Asus"
+misaki = "ˌAsˈus"
+match = "exact"
+
+# vendor: 'consensus'
+[[entry]]
+head = "ConsenSys"
+misaki = "kənsˈɛnsəs"
+match = "exact"
+
+# vendor: 'phone pay'
+[[entry]]
+head = "PhonePe"
+misaki = "fˈOnpˌA"
+match = "exact"
+
+# vendor: 'bharat pay'
+[[entry]]
+head = "BharatPe"
+misaki = "bˈɑɹətpˌA"
+match = "exact"
+
+# vendor: 're-new'
+[[entry]]
+head = "ReNew"
+misaki = "ɹinˈu"
+match = "exact"
+
+# vendor: 'in-mo-bee'
+[[entry]]
+head = "InMobi"
+misaki = "ɪnmˈObi"
+match = "exact"
+
+# vendor: 'soo-suh', not spelled
+[[entry]]
+head = "SUSE"
+misaki = "sˈusə"
+match = "exact"
+
+# vendor: a word
+[[entry]]
+head = "WHOOP"
+misaki = "wˈup"
+match = "exact"
+
+# vendor: 'I-Q-via'
+[[entry]]
+head = "IQVIA"
+misaki = "ˌIkjˌuvˈiə"
+match = "exact"
+
+# vendor: 'eye-dex'
+[[entry]]
+head = "IDEX"
+misaki = "ˈIdɛks"
+match = "exact"
+
+# Dana Inc, a name, not spelled
+[[entry]]
+head = "DANA"
+match = "exact"
+words = "Dana"

@@ -131,3 +131,15 @@ class TestPackagedInitialisms:
     def test_ieee_is_read_i_triple_e(self):
         lexicon = packaged_lexicon()
         assert lexicon.apply("the IEEE standard") == "the I triple E standard"
+
+    def test_company_names_from_the_review(self):
+        lexicon = packaged_lexicon()
+        assert lexicon.apply("Xiaomi and Qt") == (
+            "[Xiaomi](/ʃˌWmˈi/) and [Qt](/kjˈut/)"
+        )
+        assert lexicon.apply("SUSE and WHOOP") == (
+            "[SUSE](/sˈusə/) and [WHOOP](/wˈup/)"
+        )
+        assert lexicon.apply("Dana Inc and DANA") == "Dana Inc and Dana"
+        # Case matters for the exact entries: the words stay words.
+        assert lexicon.apply("the suse of it") == "the suse of it"

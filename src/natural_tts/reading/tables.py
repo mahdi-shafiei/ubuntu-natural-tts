@@ -287,6 +287,7 @@ KEEP = frozenset(["pH", "pKa", "pKb", "mAb", "iPhone", "iPad", "macOS"])
 SAID_AS_WORDS = frozenset(
     [
         "SQL",  # "sequel" in the engine; MySQL passes through whole
+        "PAX",  # PAX Labs, pax: a word
         "ANOVA",
         "ANCOVA",
         "MANOVA",

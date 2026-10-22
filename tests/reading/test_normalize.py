@@ -112,3 +112,18 @@ class TestSpelling:
 
     def test_lowercase_letters_are_spelled_with_the_same_names(self):
         assert spell_markup("df") == "[df](/dˌiˈɛf/)"
+
+
+class TestFormulaGuard:
+    def test_long_brand_names_are_not_chemical_formulas(self):
+        # Every piece of AmWINS and OCSiAl is an element symbol; they are
+        # brands, and six letters without a count is not a formula.
+        assert (
+            normalize_words("AmWINS Group and OCSiAl")
+            == "AmWINS Group and OCSiAl"
+        )
+
+    def test_short_formulas_and_counted_ones_still_are(self):
+        assert normalize_words("NaOH and KMnO4") == (
+            "[NaOH](/ˌɛnˌAˌOˈAʧ/) and [KMnO](/kˌAˌɛmˌɛnˈO/) four"
+        )

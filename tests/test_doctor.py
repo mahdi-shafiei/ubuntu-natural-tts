@@ -18,6 +18,7 @@ class FakeSystem:
         self.server = "Server Name: PulseAudio (on PipeWire 1.0.5)\n"
         self.hotkeys = "[" + ", ".join(f"'{h.path}'" for h in HOTKEYS) + "]"
         self.helper_ok = True
+        self.fallback_ok = True
 
     def __call__(self, argv, *, stdin=None, timeout=None):
         argv = tuple(argv)
@@ -27,6 +28,14 @@ class FakeSystem:
             return Result(
                 0 if state == "active" else 3, f"{state}\n".encode(), b""
             )
+        if argv[1:2] == ("-c",) and "misaki.espeak" in argv[2]:
+            if not self.fallback_ok:
+                return Result(
+                    1,
+                    b"",
+                    b"ModuleNotFoundError: No module named 'misaki.espeak'",
+                )
+            return Result(0, b"", b"")
         if argv[-1:] == ("--version",):
             if not self.helper_ok:
                 return Result(127, b"", b"cannot execute binary file")
@@ -117,6 +126,11 @@ class TestRunChecks:
     def test_missing_voice(self, ctx):
         ctx.settings.piper_model.unlink()
         assert "natural-tts apply" in failed(ctx)["Piper voice"].fix
+
+    def test_kokoro_fallback_missing(self, ctx):
+        ctx.runner.fallback_ok = False
+        check = failed(ctx)["Kokoro fallback"]
+        assert "misaki.espeak" in check.detail and "install.sh" in check.fix
 
     def test_math_helper_missing(self, ctx):
         ctx.settings.paths.mathcat_helper.unlink()

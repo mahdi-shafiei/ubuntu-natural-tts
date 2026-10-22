@@ -72,7 +72,10 @@ files = ["src", "tests"]
 [[tool.mypy.overrides]]
 module = ["kokoro", "kokoro.*", "sounddevice", "numpy", "numpy.*",
           "markdown_it", "markdown_it.*", "pygments", "pygments.*",
-          "latex2mathml", "latex2mathml.*"]
+          "latex2mathml", "latex2mathml.*",
+    "misaki",
+    "misaki.*",
+]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]

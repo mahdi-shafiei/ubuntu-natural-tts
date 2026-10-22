@@ -1,0 +1,50 @@
+# name	spoken text (prepare)	misaki phonemes (checked only when misaki and its espeak fallback import)
+LinkedIn	LinkedIn	lˈɪŋktˌɪn
+GitHub	GitHub	ɡˌɪthˈʌb
+PyTorch	PyTorch	pˈI tˈɔɹʧ
+NumPy	NumPy	nˈʌm pˈI
+OpenAI	OpenAI	ˌOpᵊnˈAˌI
+YouTube	YouTube	jˈutˌub
+iPhone	iPhone	ˈIfˌOn
+iOS	iOS	ˌIOˈɛs
+macOS	macOS	mˌækˌOˈɛs
+PowerPoint	PowerPoint	pˈWəɹpˌYnt
+eBay	eBay	ˈibˌA
+DeepMind	DeepMind	dˌipmˈInd
+GPT-4o	[GPT](/ʤˌipˌitˈi/) four o	ʤˌipˌitˈi fˈɔɹ ˈO
+Nvidia	Nvidia	ɛnvˈɪdiə
+Huawei	[Huawei](/hwˈɑwˌA/)	hwˈɑwˌA
+Xiaomi	[Xiaomi](/ʃˌWmˈi/)	ʃˌWmˈi
+Adobe	Adobe	ədˈObi
+Linux	Linux	lˈɪnəks
+Nginx	Nginx	ˈɛnʤɪn ˌɛks
+SQLite	SQLite	ˌɛskjˈu lˈIt
+PostgreSQL	PostgreSQL	pˈOstɡəɹɹ ˌɛskjˌuˈɛl
+Kubernetes	Kubernetes	kˌubəɹnˈɛTiz
+Jupyter	[Jupyter](/ʤˈupətəɹ/)	ʤˈupətəɹ
+Qt	[Qt](/kjˈut/)	kjˈut
+LaTeX	LaTeX	lˈɑtɛk
+MySQL	MySQL	mˌIsˈikwəl
+SQL	SQL	sˈikwəl
+IEEE	I triple E	ˌI tɹˈɪpᵊl ˈi
+Keras	[Keras](/kˈɛɹæs/)	kˈɛɹæs
+Shein	[Shein](/ʃˈiˌɪn/)	ʃˈiˌɪn
+Airbnb	[Airbnb](/ˌɛɹbˌiˌɛnbˈi/)	ˌɛɹbˌiˌɛnbˈi
+Porsche	[Porsche](/pˈɔɹʃə/)	pˈɔɹʃə
+Asus	[Asus](/ˌAsˈus/)	ˌAsˈus
+ConsenSys	[ConsenSys](/kənsˈɛnsəs/)	kənsˈɛnsəs
+InMobi	[InMobi](/ɪnmˈObi/)	ɪnmˈObi
+SUSE	[SUSE](/sˈusə/)	sˈusə
+WHOOP	[WHOOP](/wˈup/)	wˈup
+IQVIA	[IQVIA](/ˌIkjˌuvˈiə/)	ˌIkjˌuvˈiə
+TSMC	TSMC	tˌiˌɛsˌɛmsˈi
+ASML	ASML	ˌAˌɛsˌɛmˈɛl
+AT&T	[AT](/ˌAtˈi/) and T	ˌAtˈi ænd tˈi
+AMD	[AMD](/ˌAˌɛmdˈi/)	ˌAˌɛmdˈi
+IBM	[IBM](/ˌIbˌiˈɛm/)	ˌIbˌiˈɛm
+HP Inc.	[HP](/ˌAʧpˈi/) Incorporated	ˌAʧpˈi ɪnkˈɔɹpəɹˌATᵻd
+Hyundai	Hyundai	hˈʌndA
+Toyota	Toyota	tYˈOTə
+ByteDance	ByteDance	bˌItdˈæns
+McDonald's	McDonald's	məkdˈɑnəldz
+ExxonMobil	ExxonMobil	ˈɛksɑn mˈObɪl
