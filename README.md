@@ -36,6 +36,57 @@ https://github.com/user-attachments/assets/07156e2c-69fa-446a-9be4-e507cbc39142
 | **License** | GPL-3.0 | GPL-3.0 engine; voice license varies | Apache-2.0 |
 | **Listen** | [espeak.mp3](docs/samples/espeak.mp3) | [piper.mp3](docs/samples/piper.mp3) | [kokoro.mp3](docs/samples/kokoro.mp3) |
 
+## Hear the reading front end
+
+Since 0.2.0 the hotkey reads technical text the way a person would. Each
+clip plays the same sentence twice: first as 0.1.1 read it, then as
+0.2.0 reads it. The red tick marks where the old chunker cut the
+sentence.
+
+**Numbers, units and symbols** in a methods sentence:
+
+> We used a phosphate buffered saline solution at pH 7.4 and 37 °C
+> (n = 3; p < 0.05), see Eq. 2: x = 1.
+
+<!-- media/reading-methods.mp4: drag onto the blank line below on github.com, then delete this comment. -->
+
+**Abbreviations and names**:
+
+> Our neighbour, Dr. Ana Ruiz, moved to St. Paul last spring; her
+> brother, Mr. T. Ruiz, stayed behind.
+
+<!-- media/reading-names.mp4: drag onto the blank line below on github.com, then delete this comment. -->
+
+<details>
+<summary>Two more: a paper sentence and a citation-heavy one</summary>
+
+> In E. coli the gene lacZ is expressed, as Dr. Smith et al. showed in
+> Fig. 3 of the paper, which we read in detail.
+
+<!-- media/reading-paper.mp4: drag onto the blank line below on github.com, then delete this comment. -->
+
+> The effect was first reported by Chen et al. in 2019 (see Ref. 4;
+> cf. Sec. 3.2), and later confirmed, e.g. by Müller et al., with
+> larger samples (n = 120; p < 0.01).
+
+<!-- media/reading-citations.mp4: drag onto the blank line below on github.com, then delete this comment. -->
+
+</details>
+
+| Written | Spoken |
+|---|---|
+| `p < 0.05`, `n = 3`, `5 ± 2` | p is less than zero point zero five, n equals three, five plus or minus two |
+| `37 °C`, `10 µg/mL`, `3–5 mm` | thirty-seven degrees Celsius, ten micrograms per milliliter, three to five millimeters |
+| `Fig. 3`, `Eq. 2`, `et al.`, `e.g.` | Figure three, Equation two, et al, for example |
+| `Dr. Smith`, `St. Louis`, `Elm St.` | Doctor Smith, Saint Louis, Elm Street |
+| `2026-10-21`, `14:30`, `$5.50`, `v2.1.0` | October twenty-first, twenty twenty-six; fourteen thirty; five dollars and fifty cents; version two point one point zero |
+| `x²`, `1.5 × 10^-3`, `α` | x squared, one point five times ten to the power of minus three, alpha |
+| `E. coli`, `in vitro`, `Cas9`, `H2O` | pronounced from the built-in lexicon; H two O |
+| `[12]`, `(Smith et al., 2019)` | skipped (`citations = "read"` says them) |
+
+Everything is a plain rule you can read in `src/natural_tts/reading/`,
+and `reading.enabled = false` restores the raw reading.
+
 ## Quick start
 
 ```bash
