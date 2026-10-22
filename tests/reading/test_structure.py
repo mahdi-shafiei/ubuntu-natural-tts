@@ -287,3 +287,68 @@ class TestRealDocuments:
         assert got[Kind.LIST_ITEM] >= 8
         fences = [b for b in out if b.kind is Kind.CODE]
         assert any(b.language in {"bash", "toml"} for b in fences)
+
+
+class TestMathBlocks:
+    def test_display_latex_in_plain_text(self):
+        text = "Before.\n\n$$\\int_0^1 f(x)\\,dx$$\n\nAfter."
+        out = list(blocks(text, None))
+        assert kinds(out) == [Kind.PROSE, Kind.MATH, Kind.PROSE]
+        assert out[1].language == "latex"
+        assert out[1].text == "\\int_0^1 f(x)\\,dx"
+        assert out[0].text == "Before." and out[2].text == "After."
+
+    def test_equation_environment_and_bracket_display(self):
+        text = (
+            "\\begin{equation}\na = b\n\\end{equation}\n\n"
+            "Then \\[E = mc^2\\] holds."
+        )
+        out = list(blocks(text, None))
+        assert [b.kind for b in out] == [
+            Kind.MATH,
+            Kind.PROSE,
+            Kind.MATH,
+            Kind.PROSE,
+        ]
+        assert out[0].text == "a = b" and out[2].text == "E = mc^2"
+
+    def test_inline_latex_stays_inside_the_paragraph(self):
+        (prose,) = blocks("where $x^2 + y^2 = r^2$ holds.", None)
+        assert prose.kind is Kind.PROSE and "$x^2 + y^2 = r^2$" in prose.text
+
+    def test_html_math_element_prefers_its_latex_annotation(self):
+        html = (
+            "<p>Thus</p><math><semantics><mrow><mi>x</mi></mrow>"
+            '<annotation encoding="application/x-tex">x^2</annotation>'
+            "</semantics></math><p>done.</p>"
+        )
+        out = list(blocks(html, "text/html"))
+        assert kinds(out) == [Kind.PROSE, Kind.MATH, Kind.PROSE]
+        assert out[1].language == "latex" and out[1].text == "x^2"
+
+    def test_html_math_without_annotation_is_mathml(self):
+        html = '<math alttext="a/b"><mfrac><mi>a</mi><mi>b</mi></mfrac></math>'
+        (block,) = blocks(html, "text/html")
+        assert block.kind is Kind.MATH and block.language == "latex"
+        assert block.text == "a/b"
+        html = "<math><mfrac><mi>a</mi><mi>b</mi></mfrac></math>"
+        (block,) = blocks(html, "text/html")
+        assert block.language == "mathml"
+        assert block.text == "<math><mfrac><mi>a</mi><mi>b</mi></mfrac></math>"
+
+    def test_mathjax_script_tag(self):
+        html = '<p>See</p><script type="math/tex">\\frac{a}{b}</script>'
+        out = list(blocks(html, "text/html"))
+        assert kinds(out) == [Kind.PROSE, Kind.MATH]
+        assert out[1].text == "\\frac{a}{b}" and out[1].language == "latex"
+
+    def test_money_is_prose(self):
+        (prose,) = blocks("It costs $5 and $10 at most.", None)
+        assert prose.kind is Kind.PROSE
+
+    def test_formula_paragraph_from_a_pdf(self):
+        text = "Energy is given by\n\nE = mc²\n\nwhere m is mass."
+        out = list(blocks(text, None))
+        assert kinds(out) == [Kind.PROSE, Kind.MATH, Kind.PROSE]
+        assert out[1].language == "unicode" and out[1].text == "E = mc²"
+        assert out[2].text == "where m is mass."

@@ -1,7 +1,11 @@
+import sys
 import time
 from dataclasses import replace
 from itertools import islice
+from pathlib import Path
 from types import GeneratorType
+
+import pytest
 
 from natural_tts.config import KokoroSettings, ReadingSettings
 from natural_tts.daemon import plain_chunker
@@ -218,3 +222,103 @@ class TestStructure:
         for segment in prepare(text, make_settings(tmp_path)):
             assert "\ue000" not in segment.text and "\ue001" not in segment.text
             assert segment.text.count("[") == segment.text.count("](/")
+
+
+FAKE_HELPER = Path(__file__).with_name("fake_mathcat.py")
+
+
+@pytest.fixture
+def fake_helper(tmp_path):
+    """Install a shim running the fake helper where setup would put it."""
+    helper = make_settings(tmp_path).paths.mathcat_helper
+    helper.parent.mkdir(parents=True, exist_ok=True)
+    helper.write_text(
+        f'#!/bin/sh\nexec "{sys.executable}" "{FAKE_HELPER}" "$@"\n'
+    )
+    helper.chmod(0o755)
+    return helper
+
+
+class TestMath:
+    def test_display_math_becomes_math_segments_with_mathcats_pauses(
+        self, tmp_path, fake_helper
+    ):
+        text = "Before.\n\n$$\\frac{a}{b}$$\n\nAfter."
+        out = list(prepare(text, make_settings(tmp_path)))
+        math = [s for s in out if s.kind is Kind.MATH]
+        assert [s.text for s in math] == [
+            "[ClearSpeak Medium] cap A. over",
+            "b",
+            "end",
+        ]
+        assert [s.pause_before for s in math] == [0.25, 0.128, 0.4]
+
+    def test_inline_math_is_spoken_inside_the_sentence(
+        self, tmp_path, fake_helper
+    ):
+        (out,) = texts(
+            prepare("where $x^2 + y^2 = r^2$ holds.", make_settings(tmp_path))
+        )
+        assert out == "where [ClearSpeak Medium] cap A. over, b, end holds."
+
+    def test_simplespeak_and_verbose_for_deep_nesting(
+        self, tmp_path, fake_helper
+    ):
+        settings = replace(
+            make_settings(tmp_path),
+            reading=ReadingSettings(math_style="simplespeak"),
+        )
+        (out,) = texts(prepare("so $\\sqrt{\\frac{a}{b}}$ holds.", settings))
+        assert out.startswith("so [SimpleSpeak Verbose]")
+
+    def test_missing_helper_falls_back_to_the_word_rules(self, tmp_path):
+        (out,) = texts(
+            prepare("where $x^2 + y^2 = r^2$ holds.", make_settings(tmp_path))
+        )
+        assert out == "where x squared plus y squared equals r squared holds."
+        text = "Before.\n\n$$a^2$$\n\nAfter."
+        kinds = [s.kind for s in prepare(text, make_settings(tmp_path))]
+        assert kinds == [Kind.PROSE, Kind.MATH, Kind.PROSE]
+
+    def test_one_helper_process_per_chunker(self, tmp_path, fake_helper):
+        chunker = chunker_for(make_settings(tmp_path))
+        assert chunker.mathcat is not None
+        list(chunker("$$a^2$$", None))
+        first = chunker.mathcat.process
+        list(chunker("$$b^2$$", None))
+        assert chunker.mathcat.process is first and first is not None
+        chunker.close()
+        assert chunker.mathcat.process is None
+
+    def test_language_follows_the_voice(self, tmp_path, fake_helper):
+        settings = replace(
+            make_settings(tmp_path), kokoro=KokoroSettings(voice="ef_dora")
+        )
+        with chunker_for(settings) as chunker:
+            assert chunker.mathcat is not None
+            assert chunker.mathcat.language == "es"
+        with chunker_for(make_settings(tmp_path)) as chunker:
+            assert chunker.mathcat is not None
+            assert chunker.mathcat.language == "en"
+
+    def test_pdf_formula_line_goes_through_mathcat(self, tmp_path, fake_helper):
+        text = "Energy is given by\n\nE = mc²\n\nwhere m is mass."
+        out = list(prepare(text, make_settings(tmp_path)))
+        assert [s.kind for s in out][:2] == [Kind.PROSE, Kind.MATH]
+
+    def test_disabled_reads_latex_raw(self, tmp_path, fake_helper):
+        settings = replace(
+            make_settings(tmp_path), reading=ReadingSettings(enabled=False)
+        )
+        text = "$$\\frac{a}{b}$$"
+        assert texts(prepare(text, settings)) == texts(plain_chunker(text))
+
+    def test_missing_latex2mathml_falls_back_with_one_warning(
+        self, tmp_path, fake_helper, monkeypatch, caplog
+    ):
+        monkeypatch.setitem(sys.modules, "latex2mathml.converter", None)
+        text = "where $x^2$ and $y^2$ hold."
+        (out,) = texts(prepare(text, make_settings(tmp_path)))
+        assert out == "where x squared and y squared hold."
+        warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+        assert len(warnings) == 1 and "latex2mathml" in warnings[0].message

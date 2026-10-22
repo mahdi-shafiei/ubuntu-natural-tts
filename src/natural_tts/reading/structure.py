@@ -9,13 +9,17 @@ Nothing here fetches anything or imports an engine.
 
 from __future__ import annotations
 
+import html
 import re
 from collections.abc import Iterator
+from dataclasses import replace
 from html.parser import HTMLParser
 from typing import Any
 
 from natural_tts.reading import carriers
 from natural_tts.reading.blocks import Block
+from natural_tts.reading.formulas import LATEX, MATHML, UNICODE
+from natural_tts.reading.math import find_math_spans, looks_like_math
 from natural_tts.segments import Kind
 
 HTML_FORMAT = "text/html"
@@ -41,10 +45,73 @@ _EMPHASIS = re.compile(r"(?<![\w*])[*_](?=\S)([^*_\n]+?)(?<=\S)[*_](?![\w*])")
 _IMAGE = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
 _TAGS = re.compile(r"<[^>]{1,200}>")
 _CITATION_SUP = re.compile(r"^[\d,\s\-\u2013]+$")
+_PARAGRAPH_BREAK = re.compile(r"\n[ \t]*\n")
+_TEX_ANNOTATION = "application/x-tex"
+_TEX_SCRIPT = "math/tex"
+_SPLIT_KINDS = frozenset({Kind.PROSE, Kind.QUOTE, Kind.LIST_ITEM})
 
 
 def blocks(text: str, format: str | None) -> Iterator[Block]:
-    """Yield the blocks of ``text`` lazily, HTML or plain text."""
+    r"""Yield the blocks of ``text`` lazily, HTML or plain text.
+
+    Display formulas (``$$…$$``, ``\\[…\\]``, equation environments) and
+    paragraphs that are one Unicode formula become MATH blocks of their
+    own; inline formulas stay in their paragraph for the prose reader.
+    """
+    for block in _raw_blocks(text, format):
+        if block.kind in _SPLIT_KINDS:
+            yield from _split_math(block)
+        else:
+            yield block
+
+
+def _split_math(block: Block) -> Iterator[Block]:
+    first = True
+    for piece, language in _math_pieces(block.text):
+        if language is None:
+            index = block.ordered_index if first else None
+            yield replace(block, text=piece, ordered_index=index)
+        else:
+            yield Block(Kind.MATH, piece, language=language)
+        first = False
+
+
+def _math_pieces(text: str) -> Iterator[tuple[str, str | None]]:
+    """``(text, language)`` pieces: language None for prose."""
+    spans = [s for s in find_math_spans(text) if s.display]
+    if not spans and _is_formula_paragraph(text):
+        yield text.strip(), UNICODE
+        return
+    last = 0
+    for span in spans:
+        yield from _prose_pieces(text[last : span.start])
+        yield span.latex.strip(), LATEX
+        last = span.end
+    yield from _prose_pieces(text[last:])
+
+
+def _prose_pieces(text: str) -> Iterator[tuple[str, str | None]]:
+    prose: list[str] = []
+    for paragraph in _PARAGRAPH_BREAK.split(text):
+        if _is_formula_paragraph(paragraph):
+            if "".join(prose).strip():
+                yield "\n\n".join(prose).strip(), None
+            prose = []
+            yield paragraph.strip(), UNICODE
+        else:
+            prose.append(paragraph)
+    if "".join(prose).strip():
+        yield "\n\n".join(prose).strip(), None
+
+
+def _is_formula_paragraph(text: str) -> bool:
+    # LaTeX markup without delimiters stays with the word rules.
+    if "\n" in text.strip() or any(c in text for c in "\\^_$"):
+        return False
+    return looks_like_math(text)
+
+
+def _raw_blocks(text: str, format: str | None) -> Iterator[Block]:
     if format == HTML_FORMAT:
         yield from _html_blocks(text)
         return
@@ -279,6 +346,8 @@ class _HtmlBlocks(HTMLParser):
         self._item_index: int | None = None
         self._language: str | None = None
         self._table: dict[str, Any] | None = None
+        self._math: dict[str, Any] | None = None
+        self._tex_script: list[str] | None = None
 
     # -- helpers
     def _flush(self, kind: Kind | None = None) -> None:
@@ -312,13 +381,34 @@ class _HtmlBlocks(HTMLParser):
     def handle_starttag(
         self, tag: str, attrs: list[tuple[str, str | None]]
     ) -> None:
+        attributes = dict(attrs)
+        if self._math is not None:
+            self._math["raw"].append(self.get_starttag_text() or "")
+            if (
+                tag == "annotation"
+                and attributes.get("encoding") == _TEX_ANNOTATION
+            ):
+                self._math["tex"] = []
+            return
+        if tag == "script" and (attributes.get("type") or "").startswith(
+            _TEX_SCRIPT
+        ):
+            self._flush()
+            self._tex_script = []
+            return
         if tag in _SKIPPED_ELEMENTS:
             self._skip += 1
             return
         if self._skip:
             return
-        attributes = dict(attrs)
-        if tag in _HEADINGS:
+        if tag == "math":
+            self._flush()
+            self._math = {
+                "raw": [self.get_starttag_text() or ""],
+                "alt": attributes.get("alttext"),
+                "tex": None,
+            }
+        elif tag in _HEADINGS:
             self._flush()
             self._heading = _HEADINGS[tag]
         elif tag in _BLOCK_ELEMENTS:
@@ -365,7 +455,31 @@ class _HtmlBlocks(HTMLParser):
             if tag == "th":
                 self._table["header"] = True
 
+    def handle_startendtag(
+        self, tag: str, attrs: list[tuple[str, str | None]]
+    ) -> None:
+        if self._math is not None:
+            self._math["raw"].append(self.get_starttag_text() or "")
+            return
+        self.handle_starttag(tag, attrs)
+        self.handle_endtag(tag)
+
     def handle_endtag(self, tag: str) -> None:
+        if self._math is not None:
+            if tag == "math":
+                self._close_math()
+            else:
+                self._math["raw"].append(f"</{tag}>")
+                if tag == "annotation" and self._math["tex"] is not None:
+                    self._math["alt"] = "".join(self._math["tex"])
+                    self._math["tex"] = None
+            return
+        if tag == "script" and self._tex_script is not None:
+            latex = "".join(self._tex_script).strip()
+            self._tex_script = None
+            if latex:
+                self.ready.append(Block(Kind.MATH, latex, language=LATEX))
+            return
         if tag in _SKIPPED_ELEMENTS:
             self._skip = max(0, self._skip - 1)
             return
@@ -419,9 +533,33 @@ class _HtmlBlocks(HTMLParser):
             )
 
     def handle_data(self, data: str) -> None:
+        if self._math is not None:
+            self._math["raw"].append(html.escape(data, quote=False))
+            if self._math["tex"] is not None:
+                self._math["tex"].append(data)
+            return
+        if self._tex_script is not None:
+            self._tex_script.append(data)
+            return
         if self._skip:
             return
         self._text.append(data)
+
+    def _close_math(self) -> None:
+        math = self._math
+        self._math = None
+        if math is None:
+            return
+        # The TeX annotation first (annotation wins over alttext), then the
+        # alttext, then the MathML itself.
+        math["raw"].append("</math>")
+        latex = (math["alt"] or "").strip()
+        if latex:
+            self.ready.append(Block(Kind.MATH, latex, language=LATEX))
+        else:
+            self.ready.append(
+                Block(Kind.MATH, "".join(math["raw"]), language=MATHML)
+            )
 
     def _close_sup(self) -> None:
         # A superscript holding only numbers is a citation mark: "[1]".

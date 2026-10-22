@@ -90,7 +90,12 @@ class TestLatexToMathml:
         assert given is not None
         # latex2mathml writes the plain bar as the entity &#x0007C;
         assert "&#x02223;" not in given and "&#x0007C;" in given
-        for latex in (r"\Pr(A \mid B)", r"E[X \mid Y]", r"p(x \mid \theta)"):
+        for latex in (
+            r"\Pr(A \mid B)",
+            r"E[X \mid Y]",
+            r"p(x \mid \theta)",
+            r"P(A \mid B) = \frac{P(B \mid A) P(A)}{P(B)}",
+        ):
             out = latex_to_mathml(latex)
             assert out is not None and "&#x02223;" not in out, latex
 

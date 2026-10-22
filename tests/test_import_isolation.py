@@ -2,7 +2,8 @@
 
 `piper-speak` runs once per spoken sentence, so `natural_tts.piper`,
 `natural_tts.cli` and `natural_tts.speechd` must load with only the
-standard library: no Kokoro, no markdown-it-py, no Pygments.
+standard library: no Kokoro, no markdown-it-py, no Pygments, no
+latex2mathml.
 """
 
 import subprocess
@@ -10,7 +11,14 @@ import sys
 
 import pytest
 
-BLOCKED = ("kokoro", "markdown_it", "pygments", "sounddevice", "numpy")
+BLOCKED = (
+    "kokoro",
+    "markdown_it",
+    "pygments",
+    "latex2mathml",
+    "sounddevice",
+    "numpy",
+)
 _SCRIPT = """
 import importlib, sys
 class Blocker:

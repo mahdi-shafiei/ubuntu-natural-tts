@@ -37,8 +37,9 @@ _SPAN = re.compile(
 )
 _MATH_EVIDENCE = re.compile(r"\\[A-Za-z]+|[\^_=<>≤≥≠±×÷∑∫√∞→]|[α-ωΑ-Ω]")
 _GREEK = re.compile(r"[α-ωΑ-Ω]")
+# "\mid" inside P( ), Pr( ), E[ ], Var( ) or p( ): a conditional bar.
 _CONDITIONAL = re.compile(
-    r"^\s*(?:\\?(?:Pr|P|E|Var|p))\s*[\(\[].*\\mid.*[\)\]]\s*$"
+    r"((?<![A-Za-z])\\?(?:Pr|P|E|Var|p)\s*[(\[][^()\[\]]*?)\\mid(?![A-Za-z])"
 )
 _SUPERSCRIPTS = "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁿⁱ"
 _SUBSCRIPTS = "₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑₒₓₔₕₖₗₘₙₚₛₜ"
@@ -105,14 +106,17 @@ def find_math_spans(text: str) -> list[MathSpan]:
 def latex_to_mathml(latex: str) -> str | None:
     r"""Convert LaTeX to one line of MathML, or None when it cannot be done.
 
-    A conditional bar (``P(A \mid B)``, ``E[X \mid Y]``) becomes a plain
-    bar before conversion so MathCAT says "given" rather than "divides";
-    set-builder bars are left alone.
+    A conditional bar (``P(A \mid B)``, ``E[X \mid Y]``, also inside a
+    longer equation) becomes a plain bar before conversion so MathCAT says
+    "given" rather than "divides"; set-builder bars are left alone.
     """
     if len(latex) > MAX_SPAN_CHARS or _brace_depth(latex) > MAX_BRACE_DEPTH:
         return None
-    if _CONDITIONAL.match(latex):
-        latex = latex.replace(r"\mid", "|")
+    while True:
+        rewritten = _CONDITIONAL.sub(r"\1|", latex)
+        if rewritten == latex:
+            break
+        latex = rewritten
     from latex2mathml.converter import convert
 
     try:

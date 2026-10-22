@@ -92,6 +92,11 @@ class MathCat:
         self._style: tuple[str, str] | None = None
         self.switches = 0
 
+    @property
+    def language(self) -> str:
+        """The MathCAT rules language the helper runs with."""
+        return self._language
+
     def __enter__(self) -> MathCat:
         """Use as a context manager; the process starts lazily."""
         return self

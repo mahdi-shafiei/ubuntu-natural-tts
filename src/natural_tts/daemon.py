@@ -83,14 +83,19 @@ def run(
     too early get a clear "not running or still starting" error.
     """
     synthesizer.warm_up()
+    chunker = chunker_for(settings)
     engine = SpeechEngine(
         synthesizer,
         sink,
-        chunker=chunker_for(settings),
+        chunker=chunker,
         slice_len=SLICE_SAMPLES,
         on_error=report_to_stderr,
     )
-    with MessageServer(settings.paths.kokoro_socket) as server, engine:
+    with (
+        MessageServer(settings.paths.kokoro_socket) as server,
+        chunker,
+        engine,
+    ):
         kokoro = settings.kokoro
         on_ready(
             f"natural-tts ready (voice {kokoro.voice}, speed {kokoro.speed})"

@@ -17,7 +17,8 @@ class Block:
             line breaks that the prose reader joins).
         level: Heading level, 1 to 6, for headings.
         ordered_index: The item's number in an ordered list, else None.
-        language: A code block's language as the document named it.
+        language: A code block's language as the document named it; a
+            MATH block's source form: ``latex``, ``unicode`` or ``mathml``.
         columns: Table header cells.
         rows: Table body rows.
     """
