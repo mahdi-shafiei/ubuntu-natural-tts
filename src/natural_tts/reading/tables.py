@@ -80,6 +80,9 @@ GREEK: dict[str, str] = {
     "Ω": "omega",
 }
 
+# misaki's American phoneme alphabet (misaki/en.py, US_VOCAB) plus space.
+MISAKI_ALPHABET = frozenset("AIOWYbdfhijklmnpstuvwzæðŋɑɔəɛɜɡɪɹɾʃʊʌʒʔʤʧˈˌθᵊᵻ ")
+
 SUPERSCRIPT_DIGITS = str.maketrans("⁰¹²³⁴⁵⁶⁷⁸⁹⁻", "0123456789-")
 SUBSCRIPT_DIGITS = str.maketrans("₀₁₂₃₄₅₆₇₈₉", "0123456789")
 

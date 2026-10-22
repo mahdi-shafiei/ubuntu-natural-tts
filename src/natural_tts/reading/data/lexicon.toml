@@ -1,0 +1,122 @@
+# Pronunciations neither engine gets right on its own. Phonemes use misaki's
+# American alphabet (A = /eɪ/, I = /aɪ/, O = /oʊ/, W = /aʊ/, Y = /ɔɪ/).
+# Sources: Wiktionary and the UMN Duluth microbiology pronunciation guide,
+# read as references; the project writes its own table (see decisions).
+# `match` is "ci" (default) or "exact"; `words` rewrites text instead.
+
+# -- species and model organisms -------------------------------------------
+[[entry]]
+head = "E. coli"
+misaki = "ˌi kˈOlI"
+
+[[entry]]
+# Wikipedia and Wiktionary say KOH-lye; CMUdict and espeak say KOH-lee.
+head = "coli"
+misaki = "kˈOlI"
+
+[[entry]]
+head = "Escherichia"
+misaki = "ˌɛʃəɹˈɪkiə"
+
+[[entry]]
+head = "Saccharomyces"
+misaki = "sˌækəɹOmˈIsiz"
+
+[[entry]]
+head = "cerevisiae"
+misaki = "sˌɛɹəvˈɪsiˌi"
+
+[[entry]]
+head = "Drosophila"
+misaki = "dɹəsˈɑfɪlə"
+
+[[entry]]
+head = "melanogaster"
+misaki = "mˌɛlənOɡˈæstəɹ"
+
+[[entry]]
+head = "Caenorhabditis"
+misaki = "sˌinOɹæbdˈIɾɪs"
+
+[[entry]]
+head = "elegans"
+misaki = "ˈɛləɡænz"
+
+[[entry]]
+head = "Arabidopsis"
+misaki = "əɹˌæbɪdˈɑpsɪs"
+
+[[entry]]
+head = "thaliana"
+misaki = "θˌæliˈɑnə"
+
+[[entry]]
+head = "musculus"
+misaki = "mˈʌskjələs"
+
+[[entry]]
+head = "sapiens"
+misaki = "sˈApiənz"
+
+[[entry]]
+head = "aeruginosa"
+misaki = "ɛɹˌuʤɪnˈOsə"
+
+[[entry]]
+head = "subtilis"
+misaki = "sˈʌbtᵻlɪs"
+
+[[entry]]
+head = "laevis"
+misaki = "lˈivɪs"
+
+[[entry]]
+head = "rerio"
+misaki = "ɹˈɛɹiO"
+
+# -- Latin phrases -----------------------------------------------------------
+[[entry]]
+head = "in vivo"
+misaki = "ɪn vˈivO"
+
+[[entry]]
+head = "in vitro"
+misaki = "ɪn vˈitɹO"
+
+[[entry]]
+head = "in silico"
+misaki = "ɪn sˈɪlɪkO"
+
+[[entry]]
+head = "ex vivo"
+misaki = "ˌɛks vˈivO"
+
+[[entry]]
+head = "de novo"
+misaki = "dˌA nˈOvO"
+
+# -- drugs ---------------------------------------------------------------------
+[[entry]]
+head = "metformin"
+misaki = "mɛtfˈɔɹmɪn"
+
+# -- genes, proteins, methods said as words ------------------------------------
+[[entry]]
+head = "Cas9"
+match = "exact"
+misaki = "kˈæs nˈIn"
+
+[[entry]]
+head = "CRISPR"
+match = "exact"
+misaki = "kɹˈɪspəɹ"
+
+[[entry]]
+head = "mTOR"
+match = "exact"
+misaki = "ˈɛm tˈɔɹ"
+
+[[entry]]
+head = "ELISA"
+match = "exact"
+misaki = "ᵻlˈIzə"

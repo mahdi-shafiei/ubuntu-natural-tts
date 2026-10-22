@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 from natural_tts.config import CITATION_MODES
 from natural_tts.reading import tables
+from natural_tts.reading.lexicon import MARKUP
 from natural_tts.reading.numbers import cardinal, decimal, digits, ordinal, year
 
 _NUMBER = r"\d+(?:,\d{3})*(?:\.\d+)?|\.\d+"
@@ -616,7 +617,6 @@ RULES: tuple[Rule, ...] = (
     _fraction,
     _number,
     _dashes,
-    _tidy,
 )
 
 
@@ -636,6 +636,18 @@ def normalize_words(
     if citations not in CITATION_MODES:
         raise ValueError(f"citations must be one of {CITATION_MODES}")
     options = Options(british=british, citations=citations)
+    # Pronunciation markup from the lexicon is passed through untouched.
+    pieces: list[str] = []
+    last = 0
+    for markup in MARKUP.finditer(text):
+        pieces.append(_rewrite(text[last : markup.start()], options))
+        pieces.append(markup.group(0))
+        last = markup.end()
+    pieces.append(_rewrite(text[last:], options))
+    return _tidy("".join(pieces), options)
+
+
+def _rewrite(text: str, options: Options) -> str:
     for rule in RULES:
         text = rule(text, options)
     return text
