@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*"]  # the helper job attaches binaries to the tag's release
   pull_request:
   workflow_dispatch:
 
