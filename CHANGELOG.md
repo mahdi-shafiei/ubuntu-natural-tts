@@ -6,6 +6,16 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-22
+
+### Fixed
+
+- The first segment of a long selection no longer waits for the whole
+  text to be cleaned: windows are cut on the raw text and cleaned one at
+  a time, and the built-in lexicon is compiled once. On a slow machine
+  the 1 MiB case took 76 ms before the first word; it now takes about
+  5 ms.
+
 ## [0.2.0] - 2026-10-22
 
 ### Added
@@ -73,7 +83,8 @@ uses [Semantic Versioning](https://semver.org/).
 - `natural-tts setup`, `apply` and `teardown`, driven by a single
   `~/.config/natural-tts/settings.toml`.
 
-[Unreleased]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.0...v0.1.1
