@@ -24,10 +24,12 @@ dependencies = []
 
 [project.optional-dependencies]
 piper = ["piper-tts[http]>=1.8"]
+# markdown-it-py (MIT) and Pygments (BSD-2) read Markdown structure and
+# code on the hotkey path; both are pure Python and imported lazily.
 kokoro = ["kokoro>=0.9.4", "sounddevice>=0.5", "soundfile>=0.12",
-          "numpy>=1.26"]
+          "numpy>=1.26", "markdown-it-py>=4,<5", "Pygments>=2.19"]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.17", "mypy>=2.4", "numpy>=1.26",
-       "pre-commit>=4"]
+       "pre-commit>=4", "markdown-it-py>=4,<5", "Pygments>=2.19"]
 
 [project.scripts]
 natural-tts = "natural_tts.cli:main"
@@ -65,7 +67,8 @@ mypy_path = "src"
 files = ["src", "tests"]
 
 [[tool.mypy.overrides]]
-module = ["kokoro", "kokoro.*", "sounddevice", "numpy", "numpy.*"]
+module = ["kokoro", "kokoro.*", "sounddevice", "numpy", "numpy.*",
+          "markdown_it", "markdown_it.*", "pygments", "pygments.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
