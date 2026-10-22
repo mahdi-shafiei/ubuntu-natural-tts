@@ -73,5 +73,6 @@ fn version_flag() {
         .arg("--version")
         .output()
         .unwrap();
-    assert!(String::from_utf8_lossy(&out.stdout).starts_with("natural-tts-mathcat 0.4.0"));
+    let expected = format!("natural-tts-mathcat {}", env!("CARGO_PKG_VERSION"));
+    assert!(String::from_utf8_lossy(&out.stdout).starts_with(&expected));
 }
