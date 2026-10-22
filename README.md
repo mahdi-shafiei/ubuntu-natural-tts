@@ -168,7 +168,7 @@ and fit $\hat{y} = \beta_0 + \beta_1 x$, which is significant at $p < 0.05$.
 ```
 
 
-https://github.com/user-attachments/assets/88efb6a4-6564-43b6-b853-96e2169632ee
+https://github.com/user-attachments/assets/3aca0af4-e711-4c56-b03f-40c01981a542
 
 
 
@@ -198,7 +198,7 @@ where m is the mass, and x² + y² = r² describes a circle.
 ```
 
 
-https://github.com/user-attachments/assets/3aca0af4-e711-4c56-b03f-40c01981a542
+https://github.com/user-attachments/assets/88efb6a4-6564-43b6-b853-96e2169632ee
 
 
 
