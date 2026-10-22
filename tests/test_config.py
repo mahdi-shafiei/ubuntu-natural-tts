@@ -8,6 +8,7 @@ from natural_tts.config import (
     KokoroSettings,
     Paths,
     PiperSettings,
+    ReadingSettings,
     Settings,
     SettingsError,
     load_settings,
@@ -68,6 +69,25 @@ class TestLoadSettings:
         assert KokoroSettings().voice == "af_heart"
         assert KokoroSettings().speed == 1.0
 
+    def test_reading_defaults(self):
+        # The front end is on for English voices and skips citation
+        # markers, the content-aware plan's defaults (decisions.md).
+        assert ReadingSettings().enabled is True
+        assert ReadingSettings().citations == "skip"
+        assert Settings(paths=make_paths(Path("/x"))).reading == (
+            ReadingSettings()
+        )
+
+    def test_reading_section_is_read(self, tmp_path):
+        paths = make_paths(tmp_path)
+        paths.settings_file.parent.mkdir(parents=True)
+        paths.settings_file.write_text(
+            '[reading]\nenabled = false\ncitations = "read"\n'
+        )
+        settings = load_settings(paths)
+        assert settings.reading.enabled is False
+        assert settings.reading.citations == "read"
+
     def test_file_overrides_selected_values(self, tmp_path):
         paths = make_paths(tmp_path)
         paths.settings_file.parent.mkdir(parents=True)
@@ -98,6 +118,11 @@ class TestLoadSettings:
             ("[piper]\nport = 80\n", "piper.port must be in 1024..65535"),
             ("[piper]\nlength_scale = 0\n", "piper.length_scale must be > 0"),
             ("[piper]\nvoice = 'lessac'\n", "piper.voice 'lessac'"),
+            ("[reading]\nenabled = 1\n", "reading.enabled must be bool"),
+            (
+                "[reading]\ncitations = 'drop'\n",
+                "reading.citations must be 'skip' or 'read'",
+            ),
             ("[kokoro]\nvoice = 'heart'\n", "kokoro.voice 'heart'"),
             ("[kokoro]\nvoice = 'xf_heart'\n", "kokoro.voice 'xf_heart'"),
             ("[kokoro]\nspeed = 9\n", "kokoro.speed must be in 0.5..2.0"),

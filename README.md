@@ -120,6 +120,11 @@ port = 5150
 [kokoro]
 voice = "af_heart"             # hotkey voice
 speed = 1.0                    # 0.5 .. 2.0
+
+[reading]
+enabled = true                 # speak numbers, units, abbreviations and
+                               # symbols as words (English voices only)
+citations = "skip"             # or "read": citation markers such as [12]
 ```
 
 Run `natural-tts apply` after editing. A new Piper voice is downloaded

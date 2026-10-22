@@ -180,6 +180,22 @@ class KokoroSettings:
         return self.voice[0]
 
 
+CITATION_MODES = ("skip", "read")
+
+
+@dataclass(frozen=True)
+class ReadingSettings:
+    """Content-aware reading on the hotkey path (English voices only)."""
+
+    enabled: bool = True
+    citations: str = "skip"
+
+    def __post_init__(self) -> None:
+        """Validate values."""
+        if self.citations not in CITATION_MODES:
+            raise SettingsError("reading.citations must be 'skip' or 'read'")
+
+
 @dataclass(frozen=True)
 class Settings:
     """All natural-tts settings."""
@@ -187,6 +203,7 @@ class Settings:
     paths: Paths
     piper: PiperSettings = field(default_factory=PiperSettings)
     kokoro: KokoroSettings = field(default_factory=KokoroSettings)
+    reading: ReadingSettings = field(default_factory=ReadingSettings)
 
     @property
     def piper_model(self) -> Path:
@@ -194,11 +211,13 @@ class Settings:
         return self.paths.voices_dir / f"{self.piper.voice}.onnx"
 
 
-_SECTIONS: dict[str, type[PiperSettings] | type[KokoroSettings]] = {
+_Section = PiperSettings | KokoroSettings | ReadingSettings
+_SECTIONS: dict[str, type[_Section]] = {
     "piper": PiperSettings,
     "kokoro": KokoroSettings,
+    "reading": ReadingSettings,
 }
-_SectionT = TypeVar("_SectionT", PiperSettings, KokoroSettings)
+_SectionT = TypeVar("_SectionT", PiperSettings, KokoroSettings, ReadingSettings)
 
 
 def _coerce(qualified: str, value: Any, kind: type) -> Any:
@@ -246,6 +265,9 @@ def load_settings(paths: Paths) -> Settings:
         paths=paths,
         piper=_build_section("piper", PiperSettings, data.get("piper", {})),
         kokoro=_build_section("kokoro", KokoroSettings, data.get("kokoro", {})),
+        reading=_build_section(
+            "reading", ReadingSettings, data.get("reading", {})
+        ),
     )
 
 
@@ -256,7 +278,21 @@ _FIELD_HELP = {
     "piper.sentence_silence": "pause after each sentence, in seconds",
     "kokoro.voice": "af_heart, af_bella, af_nicole, bf_emma, am_michael, ...",
     "kokoro.speed": "0.5 .. 2.0 (1.0 = normal)",
+    "reading.enabled": (
+        "speak numbers, units, abbreviations and symbols as words "
+        "(English voices); false = read the raw text"
+    ),
+    "reading.citations": "skip | read: citation markers such as [12]",
 }
+
+
+def _toml_literal(value: object) -> str:
+    """Render a default as a TOML literal (bools are lowercase in TOML)."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, str):
+        return f'"{value}"'
+    return repr(value)
 
 
 def _render_settings_toml() -> str:
@@ -267,10 +303,8 @@ def _render_settings_toml() -> str:
     for name, cls in _SECTIONS.items():
         lines.append(f"[{name}]")
         for f in dataclasses.fields(cls):
-            value = f.default
-            literal = f'"{value}"' if isinstance(value, str) else repr(value)
             lines.append(f"# {_FIELD_HELP[f'{name}.{f.name}']}")
-            lines.append(f"{f.name} = {literal}")
+            lines.append(f"{f.name} = {_toml_literal(f.default)}")
         lines.append("")
     return "\n".join(lines)
 
