@@ -6,6 +6,8 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-22
+
 ### Added
 
 - Content-aware reading on the Kokoro hotkey path (`[reading]` in
@@ -71,7 +73,8 @@ uses [Semantic Versioning](https://semver.org/).
 - `natural-tts setup`, `apply` and `teardown`, driven by a single
   `~/.config/natural-tts/settings.toml`.
 
-[Unreleased]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/mahdi-shafiei/ubuntu-natural-tts/releases/tag/v0.1.0
