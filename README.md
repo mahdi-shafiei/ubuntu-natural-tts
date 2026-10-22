@@ -99,6 +99,52 @@ https://github.com/user-attachments/assets/789baf62-d685-4d0d-9a0a-da9d1c0647e7
 Everything is a plain rule you can read in `src/natural_tts/reading/`,
 and `reading.enabled = false` restores the raw reading.
 
+### Structure and code
+
+Since 0.3.0 the hotkey also hears the shape of what you selected. Each
+clip plays the same selection twice: as 0.2.1 read it, then as 0.3.0
+reads it. Green ticks mark segment boundaries.
+
+**A README fragment** with a heading, a list and a table:
+
+```markdown
+## Quick start
+
+Run the installer, then press a key:
+
+- Super+Alt+R reads the highlighted text
+- Super+Alt+C reads the clipboard
+
+| Key | Action |
+|---|---|
+| Super+Alt+S | stop |
+```
+
+<!-- media/structure-readme.mp4: drag onto the blank line below on github.com, then delete this comment. -->
+
+**A Python block** at `code_level = 1`:
+
+```python
+def get_user_name(users, idx):
+    # the first match wins
+    if idx >= len(users):
+        return None
+    return users[idx].name
+```
+
+<!-- media/structure-code.mp4: drag onto the blank line below on github.com, then delete this comment. -->
+
+**An HTML selection**, as Firefox hands it over. The old version read the
+tags aloud:
+
+```html
+<h2>Results</h2>
+<p>Run <code>git add -A</code> at 37 °C, see Fig. 3.</p>
+<ol><li>mix the buffer</li><li>incubate for 2 h</li></ol>
+```
+
+<!-- media/structure-html.mp4: drag onto the blank line below on github.com, then delete this comment. -->
+
 ## Quick start
 
 ```bash
