@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Protocol
 
 from natural_tts.config import (
@@ -19,6 +19,8 @@ from natural_tts.engine import (
     report_to_stderr,
 )
 from natural_tts.ipc import STOP_MESSAGE, MessageServer
+from natural_tts.segments import Segment
+from natural_tts.text import chunk_text
 
 # 0.1 s of audio per device write keeps "stop" near-instant.
 SLICE_SAMPLES = KOKORO_SAMPLE_RATE // 10
@@ -42,6 +44,12 @@ class WarmSynthesizer(Synthesizer, Protocol):
     def warm_up(self) -> None:
         """Run a throwaway synthesis."""
         ...
+
+
+def plain_chunker(text: str) -> Iterator[Segment]:
+    """Today's reading: one prose segment per text chunk, no rewriting."""
+    for chunk in chunk_text(text, FIRST_CHUNK_MIN_CHARS, CHUNK_MAX_CHARS):
+        yield Segment(chunk)
 
 
 def announce(message: str) -> None:
@@ -84,8 +92,7 @@ def run(
     engine = SpeechEngine(
         synthesizer,
         sink,
-        first_min=FIRST_CHUNK_MIN_CHARS,
-        max_len=CHUNK_MAX_CHARS,
+        chunker=plain_chunker,
         slice_len=SLICE_SAMPLES,
         on_error=report_to_stderr,
     )

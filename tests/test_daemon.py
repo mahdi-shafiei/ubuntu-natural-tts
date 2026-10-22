@@ -60,7 +60,7 @@ class FakeSynth:
     def warm_up(self):
         self.warmed = True
 
-    def synthesize(self, chunks):
+    def synthesize(self, segments):
         return iter([])
 
 

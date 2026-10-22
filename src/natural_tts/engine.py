@@ -4,8 +4,8 @@ The engine is independent of Kokoro and of the audio library: it drives any
 ``Synthesizer`` and ``AudioSink``, which keeps it fully unit-testable.
 
 Threading model:
-    * one short-lived producer thread per request turns text into audio
-      chunks; a lock ensures only one synthesis runs at a time;
+    * one short-lived producer thread per request turns segments into
+      audio; a lock ensures only one synthesis runs at a time;
     * one player thread owns the audio device (PortAudio must not be driven
       from several threads) and writes small slices so stop is near-instant;
     * a generation counter cancels stale work: every submit/stop bumps it,
@@ -14,27 +14,30 @@ Threading model:
 
 from __future__ import annotations
 
+import itertools
 import queue
 import sys
 import threading
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import AbstractContextManager
 from dataclasses import dataclass
 from types import TracebackType
 from typing import Any, Protocol
 
-from natural_tts.text import chunk_text
+from natural_tts.segments import Segment
 
 # Audio samples: anything supporting len() and slicing (e.g. a NumPy array).
 Samples = Any
 ErrorReporter = Callable[[str], None]
+# Turns a selection into segments; pulled lazily so speech starts early.
+Chunker = Callable[[str], Iterator[Segment]]
 
 
 class Synthesizer(Protocol):
-    """Turns text chunks into audio, one sample buffer per chunk."""
+    """Turns segments into audio, one or more sample buffers per segment."""
 
-    def synthesize(self, chunks: Sequence[str]) -> Iterable[Samples]:
-        """Yield audio for each chunk, lazily."""
+    def synthesize(self, segments: Iterable[Segment]) -> Iterable[Samples]:
+        """Yield audio for each segment, lazily, in order."""
         ...
 
 
@@ -73,8 +76,7 @@ class SpeechEngine:
         synthesizer: Synthesizer,
         sink: AudioSink,
         *,
-        first_min: int,
-        max_len: int,
+        chunker: Chunker,
         slice_len: int,
         idle_close: float = 2.0,
         on_error: ErrorReporter = report_to_stderr,
@@ -83,10 +85,10 @@ class SpeechEngine:
         """Create an engine (call ``start`` or use it as a context manager).
 
         Args:
-            synthesizer: Produces audio for text chunks.
+            synthesizer: Produces audio for segments.
             sink: Audio output.
-            first_min: Minimum length of the first text chunk.
-            max_len: Maximum text chunk length.
+            chunker: Turns submitted text into segments; only the first is
+                taken before synthesis starts.
             slice_len: Samples per device write; bounds stop latency.
             idle_close: Seconds of silence before the device is released.
             on_error: Receives human-readable error messages.
@@ -94,8 +96,7 @@ class SpeechEngine:
         """
         self._synth = synthesizer
         self._sink = sink
-        self._first_min = first_min
-        self._max_len = max_len
+        self._chunker = chunker
         self._slice_len = slice_len
         self._idle_close = idle_close
         self._on_error = on_error
@@ -151,15 +152,16 @@ class SpeechEngine:
         """
         if self._closed:
             raise RuntimeError("SpeechEngine is closed")
-        chunks = chunk_text(text, self._first_min, self._max_len)
+        segments = self._chunker(text)
+        first = next(segments, None)
         with self._cond:
             generation = self._cancel_locked()
-            if not chunks:
+            if first is None:
                 return
             self._work += 1
         threading.Thread(
             target=self._produce,
-            args=(chunks, generation),
+            args=(itertools.chain([first], segments), generation),
             name="tts-producer",
             daemon=True,
         ).start()
@@ -202,10 +204,10 @@ class SpeechEngine:
             self._work -= 1
             self._cond.notify_all()
 
-    def _produce(self, chunks: Sequence[str], generation: int) -> None:
+    def _produce(self, segments: Iterable[Segment], generation: int) -> None:
         try:
             with self._synth_lock:
-                for samples in self._synth.synthesize(chunks):
+                for samples in self._synth.synthesize(segments):
                     if not self._is_current(generation):
                         return
                     with self._cond:

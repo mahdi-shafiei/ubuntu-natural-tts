@@ -5,12 +5,19 @@ from contextlib import contextmanager
 import pytest
 
 from natural_tts.engine import SpeechEngine
+from natural_tts.segments import Segment
+from natural_tts.text import chunk_text
 
 SLICE = 10  # samples per write; tiny so tests can interrupt mid-chunk
 
 
+def chunker(text: str):
+    """The daemon's default shape: one prose segment per text chunk."""
+    return (Segment(chunk) for chunk in chunk_text(text, 10, 40))
+
+
 class FakeSynth:
-    """Yields one 'audio' list per chunk: the chunk's characters as ints."""
+    """Yields one 'audio' list per segment: its characters as ints."""
 
     def __init__(self, delay=0.0, fail_on=None):
         self.delay = delay
@@ -20,17 +27,19 @@ class FakeSynth:
         self.max_active = 0
         self._lock = threading.Lock()
 
-    def synthesize(self, chunks):
+    def synthesize(self, segments):
         with self._lock:
-            self.calls.append(list(chunks))
+            call: list[str] = []
+            self.calls.append(call)
             self.active += 1
             self.max_active = max(self.max_active, self.active)
         try:
-            for chunk in chunks:
+            for segment in segments:
+                call.append(segment.text)
                 time.sleep(self.delay)
-                if self.fail_on and self.fail_on in chunk:
+                if self.fail_on and self.fail_on in segment.text:
                     raise RuntimeError("synth exploded")
-                yield [ord(c) for c in chunk]
+                yield [ord(c) for c in segment.text]
         finally:
             with self._lock:
                 self.active -= 1
@@ -75,8 +84,7 @@ def make_engine(synth, sink, errors, idle_close=0.05):
     return SpeechEngine(
         synth,
         sink,
-        first_min=10,
-        max_len=40,
+        chunker=chunker,
         slice_len=SLICE,
         idle_close=idle_close,
         on_error=errors.append,
@@ -101,6 +109,27 @@ class TestSpeechEngine:
             engine.wait_idle(5)
         (chunks,) = synth.calls
         assert len(chunks) > 1 and all(len(c) <= 40 for c in chunks)
+
+    def test_segments_are_pulled_lazily_after_the_first(self, errors):
+        # A long selection must not be fully prepared before speech
+        # starts: only the first segment is taken synchronously.
+        pulled = []
+
+        def lazy(text):
+            for i in range(3):
+                pulled.append(i)
+                yield Segment(f"part {i}.")
+
+        synth, sink = FakeSynth(), FakeSink()
+        engine = SpeechEngine(
+            synth, sink, chunker=lazy, slice_len=SLICE, on_error=errors.append
+        )
+        with engine:
+            engine.submit("anything")
+            assert pulled == [0]
+            assert engine.wait_idle(5)
+        assert pulled == [0, 1, 2]
+        assert text_of(sink.written) == "part 0.part 1.part 2."
 
     def test_blank_text_is_ignored(self, errors):
         synth, sink = FakeSynth(), FakeSink()

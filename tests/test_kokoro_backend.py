@@ -5,6 +5,7 @@ import pytest
 
 from natural_tts.config import KOKORO_SAMPLE_RATE, KokoroSettings
 from natural_tts.kokoro_backend import KokoroSynthesizer, SounddeviceSink
+from natural_tts.segments import Segment
 
 
 class FakeResult:
@@ -36,17 +37,31 @@ class FakePipeline:
 
 
 class TestKokoroSynthesizer:
-    def test_passes_chunks_voice_and_speed_to_the_pipeline(self):
+    def test_each_segment_is_one_pipeline_call_with_voice_and_speed(self):
         pipe = FakePipeline([FakeResult(FakeTensor([0.1]))])
         synth = KokoroSynthesizer(KokoroSettings("bf_emma", 1.1), pipe)
-        list(synth.synthesize(["One.", "Two."]))
-        text, kwargs = pipe.calls[0]
-        assert text == "One.\nTwo."
-        assert kwargs == {
+        list(synth.synthesize([Segment("One."), Segment("Two.")]))
+        assert [text for text, _ in pipe.calls] == ["One.", "Two."]
+        assert pipe.calls[0][1] == {
             "voice": "bf_emma",
             "speed": 1.1,
             "split_pattern": r"\n+",
         }
+
+    def test_segment_rate_and_voice_override_the_settings(self):
+        pipe = FakePipeline([FakeResult(FakeTensor([0.1]))])
+        synth = KokoroSynthesizer(KokoroSettings("af_heart", 1.0), pipe)
+        list(synth.synthesize([Segment("Code.", rate=0.9, voice="am_puck")]))
+        _, kwargs = pipe.calls[0]
+        assert kwargs["voice"] == "am_puck"
+        assert kwargs["speed"] == pytest.approx(0.9)
+
+    def test_pause_before_is_silence_at_the_sample_rate(self):
+        pipe = FakePipeline([FakeResult(FakeTensor([0.1]))])
+        synth = KokoroSynthesizer(KokoroSettings(), pipe)
+        out = list(synth.synthesize([Segment("x", pause_before=0.5)]))
+        assert len(out) == 2
+        assert len(out[0]) == 12_000 and not out[0].any()
 
     def test_yields_numpy_audio_and_skips_empty_results(self):
         pipe = FakePipeline(
@@ -57,7 +72,7 @@ class TestKokoroSynthesizer:
             ]
         )
         synth = KokoroSynthesizer(KokoroSettings(), pipe)
-        out = list(synth.synthesize(["x"]))
+        out = list(synth.synthesize([Segment("x")]))
         assert [a.tolist() for a in out] == [
             pytest.approx([0.1, 0.2]),
             pytest.approx([0.3]),

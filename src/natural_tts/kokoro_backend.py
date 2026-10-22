@@ -1,12 +1,13 @@
 """Adapters binding the speech engine to Kokoro and sounddevice.
 
 Heavy imports (torch, kokoro, sounddevice) happen only inside the factory
-functions, so the rest of the package stays fast to import.
+functions, so the rest of the package stays fast to import; numpy is
+imported lazily for the same reason.
 """
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Sequence
+from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
 from typing import Any
 
@@ -16,6 +17,7 @@ from natural_tts.config import (
     KokoroSettings,
 )
 from natural_tts.engine import Samples
+from natural_tts.segments import Segment
 
 PipelineFactory = Callable[[str, str], Any]
 
@@ -48,21 +50,33 @@ class KokoroSynthesizer:
         """Load the Kokoro model for the configured voice's language."""
         return cls(settings, factory(settings.lang_code, KOKORO_REPO_ID))
 
-    def synthesize(self, chunks: Sequence[str]) -> Iterator[Samples]:
-        """Yield one audio buffer per chunk (Kokoro may split further)."""
-        results = self._pipeline(
-            "\n".join(chunks),
-            voice=self._settings.voice,
-            speed=self._settings.speed,
-            split_pattern=r"\n+",
-        )
-        for result in results:
-            if result.audio is not None:
-                yield _to_numpy(result.audio)
+    def synthesize(self, segments: Iterable[Segment]) -> Iterator[Samples]:
+        """Yield audio per segment (Kokoro may split a segment further).
+
+        A segment's pause is emitted as silence at Kokoro's sample rate, and
+        its rate and voice override the configured speed and voice.
+        """
+        import numpy
+
+        for segment in segments:
+            if segment.pause_before > 0:
+                yield numpy.zeros(
+                    round(segment.pause_before * KOKORO_SAMPLE_RATE),
+                    dtype="float32",
+                )
+            results = self._pipeline(
+                segment.text,
+                voice=segment.voice or self._settings.voice,
+                speed=self._settings.speed * segment.rate,
+                split_pattern=r"\n+",
+            )
+            for result in results:
+                if result.audio is not None:
+                    yield _to_numpy(result.audio)
 
     def warm_up(self) -> None:
         """Run one tiny synthesis; the first call is much slower."""
-        for _ in self.synthesize(["Ready."]):
+        for _ in self.synthesize([Segment("Ready.")]):
             pass
 
 
