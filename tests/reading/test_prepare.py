@@ -38,7 +38,7 @@ class TestPrepare:
     def test_english_voice_gets_words_and_pronunciations(self, tmp_path):
         (out,) = texts(prepare(TEXT, make_settings(tmp_path)))
         assert "Figure three" in out and "Doctor Smith" in out
-        assert "[E. coli](/" in out and "lac Z" in out
+        assert "[E. coli](/" in out and "lacZ" in out
 
     def test_disabled_gives_todays_chunks_byte_for_byte(self, tmp_path):
         settings = replace(

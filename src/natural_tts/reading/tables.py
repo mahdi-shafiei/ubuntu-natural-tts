@@ -286,6 +286,7 @@ KEEP = frozenset(["pH", "pKa", "pKb", "mAb", "iPhone", "iPad", "macOS"])
 # pronounced as words by convention); everything else short is spelled.
 SAID_AS_WORDS = frozenset(
     [
+        "SQL",  # "sequel" in the engine; MySQL passes through whole
         "ANOVA",
         "ANCOVA",
         "MANOVA",
@@ -422,3 +423,62 @@ ELEMENTS = frozenset(
         "Lr",
     ]
 )
+
+# Letter names in misaki's alphabet, copied from misaki 0.9.4's us_gold.json
+# (hexgrad/misaki, Apache-2.0). A spelled run is one word with the primary
+# stress on its last letter, misaki's own convention for unknown capitals.
+LETTER_PHONEMES: dict[str, str] = {
+    "A": "ˈA",
+    "B": "bˈi",
+    "C": "sˈi",
+    "D": "dˈi",
+    "E": "ˈi",
+    "F": "ˈɛf",
+    "G": "ʤˈi",
+    "H": "ˈAʧ",
+    "I": "ˈI",
+    "J": "ʤˈA",
+    "K": "kˈA",
+    "L": "ˈɛl",
+    "M": "ˈɛm",
+    "N": "ˈɛn",
+    "O": "ˈO",
+    "P": "pˈi",
+    "Q": "kjˈu",
+    "R": "ˈɑɹ",
+    "S": "ˈɛs",
+    "T": "tˈi",
+    "U": "jˈu",
+    "V": "vˈi",
+    "W": "dˈʌbᵊlju",
+    "X": "ˈɛks",
+    "Y": "wˈI",
+    "Z": "zˈi",
+}
+# Words after which a Roman numeral is a number (NeMo key_word.tsv, extended
+# with the document parts this reader meets); numerals elsewhere are left.
+ROMAN_KEYWORDS = (
+    "Chapter",
+    "Part",
+    "Section",
+    "Volume",
+    "Book",
+    "Act",
+    "Scene",
+    "Article",
+    "Table",
+    "Figure",
+    "Appendix",
+    "Phase",
+    "Type",
+    "Class",
+)
+# Magnitude letters after a currency amount ($18.5M); attached to a bare
+# number they are read as letters, which is how "70B" is said.
+MAGNITUDES = {
+    "k": "thousand",
+    "K": "thousand",
+    "M": "million",
+    "B": "billion",
+    "T": "trillion",
+}

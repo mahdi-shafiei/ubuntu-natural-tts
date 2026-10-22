@@ -10,7 +10,7 @@ https://github.com/x/y	github dot com slash x slash y	blueprint
 reported [12] here	reported here	blueprint, citations skipped
 C#	C sharp	blueprint
 # --- the owner's demo texts
-In E. coli the gene lacZ is expressed, as Dr. Smith et al. showed in Fig. 3 of the paper.	In E. coli the gene lac Z is expressed, as Doctor Smith et al showed in Figure three of the paper.	demo
+In E. coli the gene lacZ is expressed, as Dr. Smith et al. showed in Fig. 3 of the paper.	In E. coli the gene lacZ is expressed, as Doctor Smith et al showed in Figure three of the paper.	demo
 We used a phosphate buffered saline solution at pH 7.4 and 37 °C (n = 3; p < 0.05), see Eq. 2: x = 1.	We used a phosphate buffered saline solution at pH seven point four and thirty-seven degrees Celsius (n equals three; p is less than zero point zero five), see Equation two: x equals one.	demo
 Our neighbour, Dr. Ana Ruiz, moved to St. Paul last spring; her brother, Mr. T. Ruiz, stayed behind.	Our neighbour, Doctor Ana Ruiz, moved to Saint Paul last spring; her brother, Mister T. Ruiz, stayed behind.	demo
 The effect was first reported by Chen et al. in 2019 (see Ref. 4; cf. Sec. 3.2), and later confirmed, e.g. by Müller et al., with larger samples (n = 120; p < 0.01).	The effect was first reported by Chen et al in twenty nineteen (see Reference four; compare Section three point two), and later confirmed, for example by Müller et al, with larger samples (n equals one hundred twenty; p is less than zero point zero one).	demo
@@ -47,14 +47,14 @@ Smith & Jones	Smith and Jones	ampersand
 1 mm and 5 mm	one millimeter and five millimeters	plural
 5 km/h and 10 mg/kg	five kilometers per hour and ten milligrams per kilogram	per
 20% and 0.5 %	twenty percent and zero point five percent	percent
-95% CI 1.2–3.4	ninety-five percent C I one point two to three point four	range, LSEQ
+95% CI 1.2–3.4	ninety-five percent [CI](/sˌiˈI/) one point two to three point four	range, LSEQ
 3–5 mm and 5-10%	three to five millimeters and five to ten percent	range
 pages 3-5 and pp. 12-15	pages three to five and pages twelve to fifteen	range
 5 wt% and 50 v/v	five weight percent and fifty volume per volume	unit
 1,000 cells at 4 °C for 2 h	one thousand cells at four degrees Celsius for two hours	unit
 10,000 and 1,234.5	ten thousand and one thousand two hundred thirty-four point five	number
 2.5-fold and 10-fold	two point five-fold and ten-fold	hyphen kept
-mean ± SD (n = 3; p < 0.05)	mean plus or minus S D (n equals three; p is less than zero point zero five)	LSEQ
+mean ± SD (n = 3; p < 0.05)	mean plus or minus [SD](/ˌɛsdˈi/) (n equals three; p is less than zero point zero five)	LSEQ
 p = .03	p equals point zero three	decimal
 # --- abbreviations
 See Fig. 3 in E. coli and 5 in the morning.	See Figure three in E. coli and five in the morning.	abbreviation before units; in is never inches
@@ -70,8 +70,8 @@ Dr. Smith lives on Elm St. in St. Louis.	Doctor Smith lives on Elm Street in Sai
 No. 5 and no doubt	Number five and no doubt	gate
 Mr. and Mrs. J. Doe met Prof. Lee and Ms. Ray.	Mister and Missus J. Doe met Professor Lee and Miss Ray.	title
 Jan. 5 and Sept. 2024 and Mon.	January five and September twenty twenty-four and Monday	month
-U.S. and U.K. and Ph.D.	U S and U K and P h D	dotted
-ANOVA and SEM and IQR	ANOVA and S E M and I Q R	LSEQ, ASWD
+U.S. and U.K. and Ph.D.	[US](/jˌuˈɛs/) and [UK](/jˌukˈA/) and [PhD](/pˌiˌAʧdˈi/)	dotted
+ANOVA and SEM and IQR	ANOVA and [SEM](/ˌɛsˌiˈɛm/) and [IQR](/ˌIkjˌuˈɑɹ/)	LSEQ, ASWD
 at 9 a.m. to 6 p.m.	at nine A M to six P M	time
 by Smith et al. Then etc. The end.	by Smith et al. Then et cetera. The end.	sentence end kept
 # --- dates, times, versions, currency
@@ -83,9 +83,9 @@ v2.1.0 and Python 3.12	version two point one point zero and Python three point t
 1st and 21st century and the 1990s	first and twenty-first century and the nineteen nineties	ordinal
 in 2019 and 1,000 and 2024 samples	in twenty nineteen and one thousand and two thousand twenty-four samples	year vs count
 # --- tokens
-Cas9 and p53 and IL-6 and HbA1c	Cas nine and p fifty-three and I L six and H b A. one c	token; the lexicon marks Cas9 before this runs
-DNA, mRNA, qPCR and CRISPR	D N A., m R N A., q P C R and CRISPR	token; A. is the letter name for misaki
-CO2 and H2O and NaCl and NaOH	C O two and water and sodium chloride and N A. O H	formula
+Cas9 and p53 and IL-6 and HbA1c	Cas9 and p53 and [IL](/ˌIˈɛl/) six and HbA1c	token; the engine reads Cas9, p53 and HbA1c itself
+DNA, mRNA, qPCR and CRISPR	[DNA](/dˌiˌɛnˈA/), mRNA, qPCR and CRISPR	token; mixed-case runs are the engine's
+CO2 and H2O and NaCl and NaOH	[CO](/sˌiˈO/) two and water and sodium chloride and [NaOH](/ˌɛnˌAˌOˈAʧ/)	formula
 C++ and F#	C plus plus and F sharp	token
 # --- urls, citations, links
 see www.example.org/docs now	see example dot org slash docs now	url
@@ -98,3 +98,21 @@ results² were	results were	footnote skipped
 Linux can finally read to you in a natural voice.	Linux can finally read to you in a natural voice.	plain
 well-known, re-run, e-mail, p-value	well-known, re-run, e-mail, p-value	plain
 a—b and c – d	a, b and c, d	dash
+# --- 0.5.0: names, initialisms as one word, token classes
+LinkedIn and GitHub use PyTorch and NumPy.	LinkedIn and GitHub use PyTorch and NumPy.	brand pass-through
+OpenAI, SpaceX, xAI, macOS and ChatGPT	OpenAI, SpaceX, xAI, macOS and ChatGPT	brand pass-through
+The ODE and the PDE; the US and the UK.	The [ODE](/ˌOdˌiˈi/) and the [PDE](/pˌidˌiˈi/); the [US](/jˌuˈɛs/) and the [UK](/jˌukˈA/).	2-3 letter runs spelled as one word
+IEEE, JSON, HTML and CRISPR	IEEE, JSON, HTML and CRISPR	4+ letters are the engine's
+WARNING: DO NOT ENTER	WARNING: DO NOT ENTER	all-caps clause guard
+RESULTS AND DISCUSSION	RESULTS AND DISCUSSION	all-caps clause guard
+GPUs and CDs and APIs and NASA's budget	[GPUs](/ʤˌipˌijˈuz/) and [CDs](/sˌidˈiz/) and [APIs](/ˌApˌiˈIz/) and NASA's budget	plural acronyms
+SSDs and PDFs and the FAQs	[SSDs](/ˌɛsˌɛsdˈiz/) and [PDFs](/pˌidˌiˈɛfs/) and the [FAQs](/ˌɛfˌAkjˈuz/)	plural acronyms
+the GPU's memory and the UN's role	the [GPU's](/ʤˌipˌijˈuz/) memory and the [UN's](/jˌuˈɛnz/) role	possessive acronyms
+GPT-4o and RTX 4090	[GPT](/ʤˌipˌitˈi/) four o and [RTX](/ˌɑɹtˌiˈɛks/) four thousand ninety	alphanumeric codes
+Chapter IV and Section III, but Henry VIII and I	Chapter four and Section three, but Henry VIII and I	Roman numerals after keywords only
+C++ or C# and .NET	C plus plus or C sharp and dot net	language names
+70B params, 3.5M, 12k users and 1.8T	70B params, 3.5M, 12k users and 1.8T	attached magnitude letters are the engine's
+$18.5M, $30k, $1.2B and €5M	eighteen point five million dollars, thirty thousand dollars, one point two billion dollars and five million euros	currency magnitudes
+$4.99 and $1,200.50	four dollars and ninety-nine cents and one thousand two hundred dollars and fifty cents	currency
+U.S. Army and the U.S.A. and d.f. = 3	[US](/jˌuˈɛs/) Army and the [USA](/jˌuˌɛsˈA/) and [df](/dˌiˈɛf/) equals three	dotted initialisms as one word
+5 M NaCl and 70 B	five molar sodium chloride and seventy bytes	spaced single-letter units stay units

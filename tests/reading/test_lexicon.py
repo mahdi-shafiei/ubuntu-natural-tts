@@ -27,6 +27,9 @@ class TestPackagedLexicon:
         lexicon = packaged_lexicon()
         for entry in lexicon.entries:
             out = lexicon.apply(f"See {entry.head}, then {entry.head}.")
+            if entry.words:
+                assert out == f"See {entry.words}, then {entry.words}.", out
+                continue
             assert out.count("](/") == 2
             assert out.endswith("/)."), out
             assert "/)," in out, out
@@ -122,3 +125,9 @@ def test_packaged_file_lives_in_the_package():
     from natural_tts import reading
 
     assert (Path(reading.__file__).parent / "data" / "lexicon.toml").is_file()
+
+
+class TestPackagedInitialisms:
+    def test_ieee_is_read_i_triple_e(self):
+        lexicon = packaged_lexicon()
+        assert lexicon.apply("the IEEE standard") == "the I triple E standard"

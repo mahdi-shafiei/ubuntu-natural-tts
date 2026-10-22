@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from natural_tts.reading.normalize import normalize_words
+from natural_tts.reading.normalize import normalize_words, spell_markup
+from natural_tts.reading.tables import LETTER_PHONEMES, MISAKI_ALPHABET
 
 GOLDEN = Path(__file__).with_name("golden.tsv")
 
@@ -88,3 +89,26 @@ class TestRobustness:
         out = normalize_words("  p  <  0.05 ,  see  Fig. 3 .  ")
         assert out == out.strip() and "  " not in out
         assert not re.search(r"\s[,.;:]", out)
+
+
+class TestSpelling:
+    def test_letter_table_covers_the_alphabet_in_misakis_alphabet(self):
+        assert sorted(LETTER_PHONEMES) == list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        for phonemes in LETTER_PHONEMES.values():
+            assert set(phonemes) <= MISAKI_ALPHABET
+
+    def test_one_word_with_primary_stress_on_the_last_letter(self):
+        # misaki's own convention for an unknown capital run (get_NNP).
+        assert spell_markup("DNA") == "[DNA](/dˌiˌɛnˈA/)"
+        assert spell_markup("ODE") == "[ODE](/ˌOdˌiˈi/)"
+        assert spell_markup("W") == "[W](/dˈʌbᵊlju/)"
+
+    def test_plural_and_possessive_follow_the_last_letter_name(self):
+        assert spell_markup("GPU", "s") == "[GPUs](/ʤˌipˌijˈuz/)"
+        assert spell_markup("PDF", "s") == "[PDFs](/pˌidˌiˈɛfs/)"
+        assert spell_markup("FAQ", "s") == "[FAQs](/ˌɛfˌAkjˈuz/)"
+        assert spell_markup("OS", "s") == "[OSs](/ˌOˈɛsɪz/)"
+        assert spell_markup("UN", "'s") == "[UN's](/jˌuˈɛnz/)"
+
+    def test_lowercase_letters_are_spelled_with_the_same_names(self):
+        assert spell_markup("df") == "[df](/dˌiˈɛf/)"

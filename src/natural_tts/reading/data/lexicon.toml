@@ -120,3 +120,9 @@ misaki = "ˈɛm tˈɔɹ"
 head = "ELISA"
 match = "exact"
 misaki = "ᵻlˈIzə"
+
+# -- initialisms with a mixed reading (CMUdict) --------------------------------
+[[entry]]
+head = "IEEE"
+match = "exact"
+words = "I triple E"

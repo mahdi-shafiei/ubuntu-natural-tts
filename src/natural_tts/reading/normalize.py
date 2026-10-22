@@ -18,11 +18,7 @@ from natural_tts.config import CITATION_MODES
 from natural_tts.reading import tables
 from natural_tts.reading.lexicon import MARKUP
 from natural_tts.reading.numbers import cardinal, decimal, digits, ordinal, year
-from natural_tts.reading.protected import (
-    protect,
-    split_protected,
-    unprotect,
-)
+from natural_tts.reading.protected import protect, split_protected, unprotect
 
 _NUMBER = r"\d+(?:,\d{3})*(?:\.\d+)?|\.\d+"
 _UNIT_KEYS = sorted(
@@ -73,8 +69,33 @@ def _plural(count: str, singular: str, plural: str) -> str:
     return singular if count.replace(",", "") in {"1", "1.0"} else plural
 
 
-def _spell(letters: str) -> str:
-    return " ".join(_LETTER_NAMES.get(c, c) for c in letters)
+_VOICELESS_ENDINGS = ("f",)
+_SIBILANT_ENDINGS = ("s", "ʧ")
+
+
+def spell_markup(letters: str, suffix: str = "") -> str:
+    """Pronunciation markup spelling ``letters`` as one word.
+
+    The phonemes follow misaki's own spelling of an unknown capital run:
+    every letter name with secondary stress and the last with primary
+    stress. ``suffix`` (``"s"`` or ``"'s"``) adds the plural or possessive
+    sound chosen by the last letter name's final sound.
+    """
+    names = [tables.LETTER_PHONEMES[c.upper()] for c in letters]
+    phonemes = "".join(n.replace("ˈ", "ˌ") for n in names[:-1]) + names[-1]
+    if suffix:
+        last = names[-1].rstrip("ˈˌ")
+        if last.endswith(_SIBILANT_ENDINGS):
+            phonemes += "ɪz"
+        elif last.endswith(_VOICELESS_ENDINGS):
+            phonemes += "s"
+        else:
+            phonemes += "z"
+    return f"[{letters}{suffix}](/{phonemes}/)"
+
+
+def _spelled(letters: str, suffix: str = "") -> str:
+    return protect(spell_markup(letters, suffix))
 
 
 # -- links, URLs, e-mail ----------------------------------------------------
@@ -256,13 +277,19 @@ def _scientific(m: re.Match[str], _: Options) -> str:
     return f"{_num(m.group(1))} times ten to the power of {power}"
 
 
-@_sub(r"([$€£¥])\s?(\d+(?:,\d{3})*)(?:\.(\d{2}))?\b")
+@_sub(r"([$€£¥])\s?(\d+(?:,\d{3})*)(?:\.(\d+))?([kKMBT])?\b")
 def _currency(m: re.Match[str], _: Options) -> str:
     major, majors, minor, minors = tables.CURRENCIES[m.group(1)]
-    amount = int(m.group(2).replace(",", ""))
+    whole, decimals, magnitude = m.group(2), m.group(3), m.group(4)
+    if magnitude:
+        number = _num(whole + (f".{decimals}" if decimals else ""))
+        return f"{number} {tables.MAGNITUDES[magnitude]} {majors}"
+    if decimals and len(decimals) != 2:
+        return f"{_num(whole + '.' + decimals)} {majors}"
+    amount = int(whole.replace(",", ""))
     words = f"{cardinal(amount)} {major if amount == 1 else majors}"
-    if m.group(3) and int(m.group(3)) and minor:
-        cents = int(m.group(3))
+    if decimals and int(decimals) and minor:
+        cents = int(decimals)
         words += f" and {cardinal(cents)} {minor if cents == 1 else minors}"
     return words
 
@@ -290,6 +317,9 @@ def _unit_words(symbol: str, count: str) -> str | None:
 
 @_sub(rf"({_NUMBER})\s?({_UNIT})(?:/({_UNIT}))?(?![\w%])")
 def _units(m: re.Match[str], _: Options) -> str:
+    attached = not m.group(0)[len(m.group(1))].isspace()
+    if attached and m.group(2) in tables.MAGNITUDES:
+        return m.group(0)  # 70B, 3.5M: the engine reads the letter
     words = _unit_words(m.group(2), m.group(1))
     if words is None:
         return m.group(0)
@@ -373,8 +403,8 @@ def _days(m: re.Match[str], _: Options) -> str:
 
 @_sub(r"\b(?:[A-Za-z]{1,2}\.){2,}+(?!\w)")
 def _dotted(m: re.Match[str], _: Options) -> str:
-    # U.S., Ph.D., d.f.: letters, said one by one.
-    return _spell(m.group(0).replace(".", ""))
+    # U.S., Ph.D., d.f.: letters, said one by one as one word.
+    return _spelled(m.group(0).replace(".", ""))
 
 
 # -- symbols -----------------------------------------------------------------
@@ -414,9 +444,13 @@ def _tilde(m: re.Match[str], _: Options) -> str:
     return "approximately "
 
 
-@_sub(r"\b([A-Z])#|\b([A-Z])\+\+")
+@_sub(r"\b([A-Z])#|\b([A-Z])\+\+|(?<!\w)\.NET\b")
 def _languages(m: re.Match[str], _: Options) -> str:
-    return f"{m.group(1)} sharp" if m.group(1) else f"{m.group(2)} plus plus"
+    if m.group(1):
+        return f"{m.group(1)} sharp"
+    if m.group(2):
+        return f"{m.group(2)} plus plus"
+    return "dot net"
 
 
 _SYMBOL_RE = re.compile(
@@ -446,60 +480,103 @@ def _formula_groups(token: str) -> list[str] | None:
     return groups
 
 
-def _token_words(token: str) -> str:
-    if token in tables.NAMED_FORMULAS:
-        return tables.NAMED_FORMULAS[token]
-    if token in tables.SAID_AS_WORDS:
-        return token
-    groups = _formula_groups(token)
-    if groups:
-        words = []
-        for g in groups:
-            letters = g.rstrip("0123456789")
-            words.append(_spell(letters.upper()))
-            if len(letters) < len(g):
-                words.append(cardinal(int(g[len(letters) :])))
-        return " ".join(words)
-    parts = re.findall(r"[A-Z]+(?![a-z])|[A-Z][a-z]+|[a-z]+|\d+", token)
-    words = []
-    for part in parts:
-        if part.isdigit():
-            words.append(
-                cardinal(int(part)) if len(part) <= 2 else digits(part)
-            )
-        elif part.isupper():
-            words.append(_spell(part) if len(part) <= 3 else part)
-        elif len(part) <= 2:
-            words.append(_spell(part))
-        else:
-            words.append(part)
+_RUNS = re.compile(r"[A-Za-z]+|\d+")
+_CAPS_RUN = re.compile(r"^[A-Z]{2,3}$")
+_CAPS_PLURAL = re.compile(r"^([A-Z]{2,3})(s|'s)$")
+_CAPS_CODE = re.compile(r"^[A-Z]{2,3}-?\d+[a-z]?$")
+_TOKEN = re.compile(
+    r"\b(?=[A-Za-z]*\d|[a-z]*[A-Z])"
+    r"([A-Za-z]+\d*(?:-\d+)?(?:[A-Za-z]+\d*)*(?:'s)?)\b"
+)
+_ROMAN_NUMERAL = re.compile(r"^[IVXLCDM]+$")
+_CLAUSE = re.compile(r"[^.;:!?\n]+")
+_ROMAN = re.compile(
+    r"\b(" + "|".join(tables.ROMAN_KEYWORDS) + r")\s+([IVXLC]{1,7})\b(?!\.\w)"
+)
+_ROMAN_VALUES = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100}
+
+
+def _formula_words(token: str, groups: list[str]) -> str:
+    # CO2 -> "C O two", NaOH -> one spelled word: letters run together
+    # until a count, which is read as a number.
+    words: list[str] = []
+    letters = ""
+    for group in groups:
+        symbol = group.rstrip("0123456789")
+        letters += symbol
+        if len(symbol) < len(group):
+            words.append(_spelled(letters))
+            words.append(cardinal(int(group[len(symbol) :])))
+            letters = ""
+    if letters:
+        words.append(_spelled(letters))
     return " ".join(words)
 
 
-@_sub(
-    r"\b(?=[A-Za-z]*\d|[a-z]*[A-Z])([A-Za-z]+\d*(?:-\d+)?(?:[A-Za-z]+\d*)*)\b"
-)
-def _tokens(m: re.Match[str], _: Options) -> str:
-    token = m.group(1)
-    if token in tables.KEEP or token in tables.SAID_AS_WORDS:
+def _code_words(token: str) -> str:
+    # GPT-4o, IL-6, TP53: the capital run spelled, short digit groups as
+    # numbers, longer ones digit by digit (NeMo's serial rule).
+    words = []
+    for run in _RUNS.findall(token):
+        if run.isdigit():
+            words.append(cardinal(int(run)) if len(run) <= 2 else digits(run))
+        elif _CAPS_RUN.match(run):
+            words.append(_spelled(run))
+        else:
+            words.append(run)
+    return " ".join(words)
+
+
+def _token_word(token: str) -> str:
+    """One mixed or capital token; anything not decided here is the engine's."""
+    stem = token.removesuffix("'s")
+    if stem in tables.KEEP or stem in tables.SAID_AS_WORDS:
         return token
     if token in tables.NAMED_FORMULAS:
         return tables.NAMED_FORMULAS[token]
-    if "-" in token:
-        head, tail = token.split("-", 1)
-        tail_words = cardinal(int(tail)) if tail.isdigit() else tail
-        return f"{_tokens_word(head)} {tail_words}"
-    return _tokens_word(token)
+    groups = None if _ROMAN_NUMERAL.match(token) else _formula_groups(token)
+    if groups:
+        return _formula_words(token, groups)
+    if _CAPS_RUN.match(token):
+        return _spelled(token)
+    plural = _CAPS_PLURAL.match(token)
+    if plural:
+        return _spelled(plural.group(1), plural.group(2))
+    if _CAPS_CODE.match(token):
+        return _code_words(token)
+    return token
 
 
-def _tokens_word(token: str) -> str:
-    if token.isupper():
-        return _spell(token) if 2 <= len(token) <= 3 else token
-    if not any(c.isdigit() for c in token) and (
-        token.islower() or token[1:].islower()
-    ):
-        return token  # an ordinary word
-    return _token_words(token)
+def _is_caps_clause(clause: str) -> bool:
+    # A heading or a shouted sentence: two or more words, none in lowercase.
+    words = [w for w in clause.split() if any(c.isalpha() for c in w)]
+    return len(words) >= 2 and all(w == w.upper() for w in words)
+
+
+def _tokens(text: str, _: Options) -> str:
+    def clause(m: re.Match[str]) -> str:
+        if _is_caps_clause(m.group(0)):
+            return m.group(0)
+        return _TOKEN.sub(lambda t: _token_word(t.group(1)), m.group(0))
+
+    return _CLAUSE.sub(clause, text)
+
+
+def _roman_value(numeral: str) -> int:
+    total = 0
+    for i, ch in enumerate(numeral):
+        value = _ROMAN_VALUES[ch]
+        if i + 1 < len(numeral) and _ROMAN_VALUES[numeral[i + 1]] > value:
+            total -= value
+        else:
+            total += value
+    return total
+
+
+def _roman(text: str, _: Options) -> str:
+    return _ROMAN.sub(
+        lambda m: f"{m.group(1)} {cardinal(_roman_value(m.group(2)))}", text
+    )
 
 
 # -- plain numbers -----------------------------------------------------------
@@ -624,6 +701,7 @@ RULES: tuple[Rule, ...] = (
     _tilde,
     _languages,
     _symbols,
+    _roman,
     _tokens,
     _year_in_context,
     _month_year,
@@ -666,6 +744,10 @@ def normalize_words(
 
 
 def _rewrite(text: str, options: Options) -> str:
+    # A rule's protected output (spelling markup) is skipped by later rules.
     for rule in RULES:
-        text = rule(text, options)
+        text = "".join(
+            protect(piece) if is_protected else rule(piece, options)
+            for piece, is_protected in split_protected(text)
+        )
     return text
