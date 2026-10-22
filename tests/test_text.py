@@ -1,8 +1,14 @@
 import random
+import time
 
 import pytest
 
-from natural_tts.text import chunk_text, clean_text, decode_text
+from natural_tts.text import (
+    chunk_text,
+    clean_text,
+    decode_text,
+    split_sentences,
+)
 
 FIRST, MAX = 60, 300
 
@@ -101,11 +107,99 @@ class TestChunkText:
         assert all(c and c == c.strip() for c in chunks)
         assert all(len(c) <= MAX for c in chunks)
 
+    def test_abbreviations_do_not_end_a_chunk(self):
+        # Measured on 0.1.1 with the real limits: chunks ended after
+        # "Dr." and "Fig.".
+        text = (
+            "In E. coli the gene lacZ is expressed, as Dr. Smith et al. "
+            "showed in Fig. 3 of the paper, which we read in detail."
+        )
+        chunks = chunk_text(text, FIRST, MAX)
+        assert not any(c.endswith(("Dr.", "Fig.", "al.", "E.")) for c in chunks)
+        assert words(chunks) == text.split()
+
+    def test_brackets_are_not_split_inside(self):
+        # Measured on 0.1.1: "(n = 3; p < 0.05)" split at the semicolon
+        # once the text before it filled the first chunk.
+        text = (
+            "We used a phosphate buffered saline solution at pH 7.4 and "
+            "37 °C (n = 3; p < 0.05), see Eq. 2: x = 1."
+        )
+        chunks = chunk_text(text, FIRST, MAX)
+        assert any("(n = 3; p < 0.05)" in c for c in chunks)
+        assert not any(c.endswith("Eq.") for c in chunks)
+        assert words(chunks) == text.split()
+
     def test_rejects_inconsistent_limits(self):
         with pytest.raises(ValueError, match="first_min"):
             chunk_text("x", 400, 300)
         with pytest.raises(ValueError, match="first_min"):
             chunk_text("x", 0, 300)
+
+
+class TestSplitSentences:
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Dr. Smith arrived.",
+            "See Fig. 3 for details.",
+            "As Smith et al. showed, it works.",
+            "Some bacteria, e.g. E. coli, grow fast.",
+            "That is, i.e. in short, done.",
+            "Compare Eq. 2 and Ref. 7 in Sec. 4.",
+            "It costs ca. 5 dollars, cf. the table.",
+            "Mr. and Mrs. J. Doe left.",
+        ],
+    )
+    def test_abbreviations_keep_the_sentence_whole(self, text):
+        assert split_sentences(text) == [text]
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "Results (n = 3; p < 0.05) were clear.",
+            "Values [a; b] and {x: y} stay together.",
+            "Nested (see (Fig. 2; panel B): here) too.",
+        ],
+    )
+    def test_matched_brackets_keep_the_sentence_whole(self, text):
+        assert split_sentences(text) == [text]
+
+    def test_punctuation_outside_brackets_still_splits(self):
+        # Positive control for the two suppression rules.
+        assert split_sentences("One (two). Three; four: five! Six? End.") == [
+            "One (two).",
+            "Three;",
+            "four:",
+            "five!",
+            "Six?",
+            "End.",
+        ]
+
+    def test_a_word_ending_like_an_abbreviation_still_splits(self):
+        # "al" and "no" are only abbreviations as whole tokens.
+        assert split_sentences("It was final. No doubt.") == [
+            "It was final.",
+            "No doubt.",
+        ]
+
+    def test_unmatched_bracket_does_not_suppress_later_splits(self):
+        assert split_sentences("Open (here. Next one. Last.") == [
+            "Open (here.",
+            "Next one.",
+            "Last.",
+        ]
+
+    def test_adversarial_brackets_split_in_linear_time(self):
+        text = "(" * 50_000 + "a. b. " * 10_000 + ")" * 25_000
+        start = time.perf_counter()
+        sentences = split_sentences(text)
+        assert time.perf_counter() - start < 1.0
+        assert " ".join(sentences).split() == text.split()
+
+    def test_words_are_preserved(self):
+        text = "A. B. c. d; e: (f. g) h!"
+        assert " ".join(split_sentences(text)).split() == text.split()
 
 
 class TestDecodeText:

@@ -12,6 +12,10 @@ uses [Semantic Versioning](https://semver.org/).
   Kokoro services instead of only enabling them, so an upgrade with
   `git pull && ./install.sh` takes effect without a reboot. A service
   that fails to restart is now reported instead of ignored.
+- The Kokoro chunker no longer ends a chunk after English
+  abbreviations such as `Dr.`, `Fig.`, `Eq.` and `et al.`, after a
+  single-letter initial, or at punctuation inside matched brackets, so
+  `(n = 3; p < 0.05)` is read in one breath.
 
 ## [0.1.1] - 2026-10-21
 

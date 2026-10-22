@@ -7,8 +7,41 @@ import textwrap
 
 _HYPHEN_BREAK = re.compile(r"-\n(?=\w)")
 _WHITESPACE = re.compile(r"\s+")
-_SENTENCE_END = re.compile(r"(?<=[.!?;:])\s+")
+_BOUNDARY = re.compile(r"[.!?;:]\s+")
 _COMMA = re.compile(r",\s+")
+_BRACKETS = {"(": ")", "[": "]", "{": "}"}
+_LEADING_PUNCTUATION = "([{\"'\u201c\u2018"
+# English tokens whose trailing full stop does not end a sentence. Kept in
+# the standard library on purpose: the daemon's tests enumerate every rule,
+# and the one maintained splitter package evaluated (nupunkt, a statistical
+# Punkt model) never splits at ";" or ":", which the chunker relies on, so
+# it would replace only this list. Other languages get their own lists later.
+_ABBREVIATIONS = frozenset(
+    {
+        "Dr",
+        "Mr",
+        "Mrs",
+        "Ms",
+        "Prof",
+        "St",
+        "Fig",
+        "Figs",
+        "Eq",
+        "Eqs",
+        "Ref",
+        "Refs",
+        "Sec",
+        "Tab",
+        "Vol",
+        "No",
+        "vs",
+        "al",
+        "e.g",
+        "i.e",
+        "cf",
+        "ca",
+    }
+)
 
 
 def decode_text(data: bytes) -> str:
@@ -33,8 +66,68 @@ def clean_text(text: str) -> str:
     return _WHITESPACE.sub(" ", _HYPHEN_BREAK.sub("", text)).strip()
 
 
+def _inside_matched_brackets(text: str) -> bytearray:
+    """Flag each position that lies inside a matched pair of brackets.
+
+    Unmatched brackets are ignored, so a stray ``(`` cannot suppress every
+    later sentence boundary. Linear in the length of ``text``.
+    """
+    delta = [0] * (len(text) + 1)
+    stack: list[tuple[int, str]] = []
+    for index, char in enumerate(text):
+        closer = _BRACKETS.get(char)
+        if closer is not None:
+            stack.append((index, closer))
+        elif stack and char == stack[-1][1]:
+            opened, _ = stack.pop()
+            delta[opened] += 1
+            delta[index + 1] -= 1
+    inside = bytearray(len(text))
+    depth = 0
+    for index in range(len(text)):
+        depth += delta[index]
+        inside[index] = depth > 0
+    return inside
+
+
+def _ends_abbreviation(text: str, dot: int) -> bool:
+    """Whether the full stop at ``dot`` follows an abbreviation or initial."""
+    begin = dot
+    while begin > 0 and not text[begin - 1].isspace():
+        begin -= 1
+    token = text[begin:dot].lstrip(_LEADING_PUNCTUATION)
+    return token in _ABBREVIATIONS or (len(token) == 1 and token.isupper())
+
+
+def split_sentences(text: str) -> list[str]:
+    """Split cleaned text at sentence-ending punctuation.
+
+    A boundary is one of ``. ! ? ; :`` followed by whitespace, except after
+    an English abbreviation such as ``Dr.`` or ``Fig.`` or a single-letter
+    initial, and except inside a matched pair of brackets, so
+    ``(n = 3; p < 0.05)`` stays whole. The punctuation stays with the
+    sentence before it and the whitespace is dropped, so the words of the
+    result are exactly the words of ``text``.
+
+    Args:
+        text: Text already passed through :func:`clean_text`.
+    """
+    inside = _inside_matched_brackets(text)
+    sentences: list[str] = []
+    start = 0
+    for match in _BOUNDARY.finditer(text):
+        end = match.start()
+        if inside[end] or (text[end] == "." and _ends_abbreviation(text, end)):
+            continue
+        sentences.append(text[start : end + 1])
+        start = match.end()
+    if start < len(text):
+        sentences.append(text[start:])
+    return sentences
+
+
 def _sentences(text: str, max_len: int) -> list[str]:
-    pieces = [s for s in _SENTENCE_END.split(text) if s]
+    pieces = split_sentences(text)
     # Unpunctuated runs are wrapped at word boundaries; a single word longer
     # than max_len (e.g. a URL) is kept whole rather than cut in half.
     return [
