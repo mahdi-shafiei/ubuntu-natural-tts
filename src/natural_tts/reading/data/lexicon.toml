@@ -242,3 +242,90 @@ match = "exact"
 head = "DANA"
 match = "exact"
 words = "Dana"
+
+# -- biology: word-acronyms, genotypes, strains, dosing (research notes) --------
+# Wiktionary /ˈdʒiː.wɒs/
+[[entry]]
+head = "GWAS"
+misaki = "ʤˈiwˌɑs"
+match = "exact"
+
+# Wiktionary: /snɪp/ in genetics
+[[entry]]
+head = "SNP"
+misaki = "snˈɪp"
+match = "exact"
+
+[[entry]]
+head = "SNPs"
+misaki = "snˈɪps"
+match = "exact"
+
+# JAX floxed alleles
+[[entry]]
+head = "fl/fl"
+match = "exact"
+words = "flox flox"
+
+# C57BL/6 is "black 6" (JAX, Charles River)
+[[entry]]
+head = "C57BL/6J"
+match = "exact"
+words = "C fifty-seven black six J"
+
+[[entry]]
+head = "C57BL/6"
+match = "exact"
+words = "C fifty-seven black six"
+
+# dosing abbreviations: ISMP's written replacements are also what is said
+[[entry]]
+head = "q.d."
+match = "exact"
+words = "daily"
+
+[[entry]]
+head = "b.i.d."
+match = "exact"
+words = "twice daily"
+
+[[entry]]
+head = "t.i.d."
+match = "exact"
+words = "three times daily"
+
+[[entry]]
+head = "q.i.d."
+match = "exact"
+words = "four times daily"
+
+[[entry]]
+head = "p.o."
+match = "exact"
+words = "by mouth"
+
+[[entry]]
+head = "i.v."
+match = "exact"
+words = "intravenous"
+
+[[entry]]
+head = "i.p."
+match = "exact"
+words = "intraperitoneal"
+
+[[entry]]
+head = "s.c."
+match = "exact"
+words = "subcutaneous"
+
+[[entry]]
+head = "i.m."
+match = "exact"
+words = "intramuscular"
+
+# -- physics constants in prose (usage; MathCAT agrees on "h bar") ---------
+[[entry]]
+head = "ħ"
+match = "exact"
+words = "h bar"

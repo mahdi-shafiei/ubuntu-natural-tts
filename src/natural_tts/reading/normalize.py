@@ -15,7 +15,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 
 from natural_tts.config import CITATION_MODES
-from natural_tts.reading import tables
+from natural_tts.reading import biology, tables
 from natural_tts.reading.data import units
 from natural_tts.reading.lexicon import MARKUP
 from natural_tts.reading.numbers import cardinal, decimal, digits, ordinal, year
@@ -102,6 +102,40 @@ def spell_markup(letters: str, suffix: str = "") -> str:
 
 def _spelled(letters: str, suffix: str = "") -> str:
     return protect(spell_markup(letters, suffix))
+
+
+# -- life-science notation ----------------------------------------------------
+
+
+_NOTATION = re.compile(r"(?<![\w.])[^\s,;:()]+(?:\([^\s()]*\))*(?![\w])")
+# A karyotype carries commas and parenthesised bands: matched whole first.
+_KARYOTYPE_RE = re.compile(
+    r"\b\d{2},(?:XXY|XYY|XX|XY|X)(?:,[+−-]?\w+(?:\([^\s()]*\))*)*"
+)
+
+
+def _biology(text: str, _: Options) -> str:
+    """Variants, karyotypes, bands, genotypes and enzymes, token by token."""
+
+    def replace(m: re.Match[str]) -> str:
+        token = m.group(0)
+        for reader in (
+            biology.hgvs_words,
+            biology.karyotype_words,
+            biology.band_words,
+            biology.genotype_words,
+            biology.enzyme_words,
+        ):
+            words = reader(token)
+            if words is not None:
+                return protect(words)
+        return token
+
+    def karyotype(m: re.Match[str]) -> str:
+        words = biology.karyotype_words(m.group(0))
+        return m.group(0) if words is None else protect(words)
+
+    return _NOTATION.sub(replace, _KARYOTYPE_RE.sub(karyotype, text))
 
 
 # -- links, URLs, e-mail ----------------------------------------------------
@@ -541,7 +575,12 @@ def _code_words(token: str) -> str:
     words = []
     for run in _RUNS.findall(token):
         if run.isdigit():
-            words.append(cardinal(int(run)) if len(run) <= 2 else digits(run))
+            if len(run) <= 2:
+                words.append(cardinal(int(run)))
+            elif len(run) == 3:
+                words.append(biology.three_digit_code(run))
+            else:
+                words.append(digits(run))
         elif _CAPS_RUN.match(run):
             words.append(_spelled(run))
         else:
@@ -684,6 +723,7 @@ def _tidy(text: str, _: Options) -> str:
 
 RULES: tuple[Rule, ...] = (
     _markdown_links,
+    _biology,
     _break_links,
     _url,
     _email,

@@ -132,6 +132,21 @@ class TestPackagedInitialisms:
         lexicon = packaged_lexicon()
         assert lexicon.apply("the IEEE standard") == "the I triple E standard"
 
+    def test_biology_and_physics_entries(self):
+        lexicon = packaged_lexicon()
+        assert (
+            lexicon.apply("a GWAS of SNPs")
+            == "a [GWAS](/ʤˈiwˌɑs/) of [SNPs](/snˈɪps/)"
+        )
+        assert lexicon.apply("Cftr fl/fl mice") == "Cftr flox flox mice"
+        assert lexicon.apply("10 mg/kg b.i.d. p.o. and 5 mg i.v. q.d.") == (
+            "10 mg/kg twice daily by mouth and 5 mg intravenous daily"
+        )
+        assert (
+            lexicon.apply("C57BL/6J mice") == "C fifty-seven black six J mice"
+        )
+        assert lexicon.apply("ħ and ω") == "h bar and ω"
+
     def test_company_names_from_the_review(self):
         lexicon = packaged_lexicon()
         assert lexicon.apply("Xiaomi and Qt") == (

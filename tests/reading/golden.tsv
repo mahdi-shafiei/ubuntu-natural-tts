@@ -85,7 +85,7 @@ in 2019 and 1,000 and 2024 samples	in twenty nineteen and one thousand and two t
 # --- tokens
 Cas9 and p53 and IL-6 and HbA1c	Cas9 and p53 and [IL](/ˌIˈɛl/) six and HbA1c	token; the engine reads Cas9, p53 and HbA1c itself
 DNA, mRNA, qPCR and CRISPR	[DNA](/dˌiˌɛnˈA/), mRNA, qPCR and CRISPR	token; mixed-case runs are the engine's
-CO2 and H2O and NaCl and NaOH	[CO](/sˌiˈO/) two and water and sodium chloride and [NaOH](/ˌɛnˌAˌOˈAʧ/)	formula
+CO2 and H2O and NaCl and NaOH	carbon dioxide and water and sodium chloride and sodium hydroxide	formula names in prose
 C++ and F#	C plus plus and F sharp	token
 # --- urls, citations, links
 see www.example.org/docs now	see example dot org slash docs now	url
@@ -125,3 +125,12 @@ Appendix 3C and plan 5N and vitamin C	Appendix 3C and plan 5N and vitamin C	not 
 incubate for 2 h and 30 min at 37 °C	incubate for two hours and thirty minutes at thirty-seven degrees Celsius	unit, lab time
 he waited 3 d and 5 a	he waited three d and five a	ambiguous symbols are not units
 2 pc and 5 ly and 3 Mpc	two parsecs and five light years and three megaparsecs	unit, astronomy
+# --- 0.6.0: biology, chemistry prose, physics constants
+the variant c.123A>G and p.Arg175His in TP53	the variant c dot one twenty-three, A to G and p dot arg one seventy-five his in [TP](/tˌipˈi/) fifty-three	HGVS
+karyotype 46,XY,t(9;22)(q34;q11) was found	karyotype forty-six, X Y, translocation between nine and twenty-two, q thirty-four, q eleven was found	ISCN
+a deletion at 17p13.1 and Xq28	a deletion at seventeen p thirteen point one and X q twenty-eight	chromosome band
+Tp53−/− mice and Cftr+/− littermates	Tp53 knockout mice and Cftr heterozygous littermates	genotype (JAX notation)
+HEK293 and A549 cells at OD600	[HEK](/ˌAʧˌikˈA/) two ninety-three and A549 cells at [OD](/ˌOdˈi/) six hundred	cell lines: three digits read as practice does
+cut with EcoRI and HindIII, then BamHI	cut with Eco R one and Hin D three, then Bam H one	restriction enzymes (Edvotek)
+CO2, NH3 and H2SO4 in water, then C6H12O6 and C2H5OH	carbon dioxide, ammonia and sulfuric acid in water, then glucose and ethanol	chemistry prose names (UEfAP, Wikipedia glossary)
+KOH and HNO3 and CaCO3 and H2O2	potassium hydroxide and nitric acid and calcium carbonate and hydrogen peroxide	chemistry prose names

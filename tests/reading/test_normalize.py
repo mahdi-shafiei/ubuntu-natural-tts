@@ -124,6 +124,6 @@ class TestFormulaGuard:
         )
 
     def test_short_formulas_and_counted_ones_still_are(self):
-        assert normalize_words("NaOH and KMnO4") == (
-            "[NaOH](/ˌɛnˌAˌOˈAʧ/) and [KMnO](/kˌAˌɛmˌɛnˈO/) four"
+        assert normalize_words("NaOCl and KMnO4") == (
+            "[NaOCl](/ˌɛnˌAˌOsˌiˈɛl/) and [KMnO](/kˌAˌɛmˌɛnˈO/) four"
         )

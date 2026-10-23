@@ -230,9 +230,44 @@ SAID_AS_WORDS = frozenset(
         "CAM",
     ]
 )
+# Compounds named in prose (UEfAP speaking guide; Wikipedia's Glossary of
+# chemical formulae as the authoring reference). Inside an equation, the
+# math reader spells them, which is the equation register.
 NAMED_FORMULAS: dict[str, str] = {
     "H2O": "water",
     "NaCl": "sodium chloride",
+    "CO2": "carbon dioxide",
+    "CO": "carbon monoxide",
+    "O2": "oxygen",
+    "N2": "nitrogen",
+    "H2": "hydrogen",
+    "O3": "ozone",
+    "CH4": "methane",
+    "NH3": "ammonia",
+    "HCl": "hydrochloric acid",
+    "HF": "hydrofluoric acid",
+    "H2SO4": "sulfuric acid",
+    "HNO3": "nitric acid",
+    "H3PO4": "phosphoric acid",
+    "NaOH": "sodium hydroxide",
+    "KOH": "potassium hydroxide",
+    "KCl": "potassium chloride",
+    "CaCl2": "calcium chloride",
+    "CaCO3": "calcium carbonate",
+    "NaHCO3": "sodium bicarbonate",
+    "Na2CO3": "sodium carbonate",
+    "MgSO4": "magnesium sulfate",
+    "CuSO4": "copper sulfate",
+    "NaNO3": "sodium nitrate",
+    "H2O2": "hydrogen peroxide",
+    "SO2": "sulfur dioxide",
+    "NO2": "nitrogen dioxide",
+    "N2O": "nitrous oxide",
+    "C6H12O6": "glucose",
+    "C2H5OH": "ethanol",
+    "CH3COOH": "acetic acid",
+    "CH3OH": "methanol",
+    "C12H22O11": "sucrose",
 }
 ELEMENTS = frozenset(
     [
