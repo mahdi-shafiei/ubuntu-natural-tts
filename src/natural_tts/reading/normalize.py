@@ -16,22 +16,28 @@ from dataclasses import dataclass
 
 from natural_tts.config import CITATION_MODES
 from natural_tts.reading import tables
+from natural_tts.reading.data import units
 from natural_tts.reading.lexicon import MARKUP
 from natural_tts.reading.numbers import cardinal, decimal, digits, ordinal, year
 from natural_tts.reading.protected import protect, split_protected, unprotect
 
 _NUMBER = r"\d+(?:,\d{3})*(?:\.\d+)?|\.\d+"
 _UNIT_KEYS = sorted(
-    {*tables.UNITS}
+    {*units.UNITS}
     | {
         prefix + unit
-        for unit, prefixes in tables.PREFIXED_UNITS.items()
-        for prefix in prefixes
+        for unit in units.PREFIXABLE
+        for prefix in units.SI_PREFIXES
     },
     key=len,
     reverse=True,
 )
 _UNIT = "|".join(re.escape(u) for u in _UNIT_KEYS)
+# A single letter counts as a unit only with a space before it, unless it
+# is one of the few that are written attached ("3m", "10s").
+_SPACED_UNIT = "|".join(
+    re.escape(u) for u in _UNIT_KEYS if len(u) > 1 or u in units.ATTACHABLE
+)
 _LETTER_NAMES = {"A": "A."}  # a bare capital A is read as the article
 
 
@@ -310,26 +316,30 @@ def _magnitude(m: re.Match[str], _: Options) -> str:
 
 
 def unit_words(symbol: str, count: str) -> str | None:
-    """Spoken words for a unit symbol, plural when ``count`` is not one."""
-    if symbol in tables.UNITS:
-        return _plural(count, *tables.UNITS[symbol])
-    prefix, base = symbol[0], symbol[1:]
-    if base in tables.PREFIXED_UNITS and prefix in tables.PREFIXED_UNITS[base]:
-        singular, plural = tables.UNITS[base]
-        name = tables.PREFIXES[prefix]
-        return _plural(
-            count, name + singular, (name + plural) if plural else ""
-        )
+    """Spoken words for a unit symbol, plural when ``count`` is not one.
+
+    A whole-symbol match wins over prefix decomposition ("Pa" is pascal,
+    not peta-annum), as in MathCAT.
+    """
+    if symbol in units.UNITS:
+        return _plural(count, *units.UNITS[symbol])
+    for length in (2, 1):
+        prefix, base = symbol[:length], symbol[length:]
+        if prefix in units.SI_PREFIXES and base in units.PREFIXABLE:
+            singular, plural = units.UNITS[base]
+            name = units.SI_PREFIXES[prefix]
+            return _plural(count, name + singular, name + plural)
     return None
 
 
-@_sub(rf"({_NUMBER})\s?({_UNIT})(?:/({_UNIT}))?(?![\w%])")
+@_sub(rf"({_NUMBER})(?:\s({_UNIT})|({_SPACED_UNIT}))(?:/({_UNIT}))?(?![\w%])")
 def _units(m: re.Match[str], _: Options) -> str:
-    words = unit_words(m.group(2), m.group(1))
+    symbol = m.group(2) or m.group(3)
+    words = unit_words(symbol, m.group(1))
     if words is None:
         return m.group(0)
-    if m.group(3):
-        per = unit_words(m.group(3), "1")
+    if m.group(4):
+        per = unit_words(m.group(4), "1")
         if per is None:
             return m.group(0)
         words = f"{words} per {per}"

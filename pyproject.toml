@@ -29,7 +29,7 @@ piper = ["piper-tts[http]>=1.8"]
 kokoro = ["kokoro>=0.9.4", "sounddevice>=0.5", "soundfile>=0.12",
           "numpy>=1.26", "markdown-it-py>=4,<5", "Pygments>=2.19",
           "latex2mathml>=3.81,<4"]
-dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.17", "mypy>=2.4", "numpy>=1.26",
+dev = ["pyyaml>=6", "pytest>=8", "pytest-cov>=5", "ruff>=0.17", "mypy>=2.4", "numpy>=1.26",
        "pre-commit>=4", "markdown-it-py>=4,<5", "Pygments>=2.19",
        "latex2mathml>=3.81,<4"]
 
@@ -62,6 +62,8 @@ convention = "google"
 "src/natural_tts/reading/normalize.py" = ["RUF001"]
 "src/natural_tts/reading/math.py" = ["RUF001"]
 "src/natural_tts/reading/intent.py" = ["RUF001"]
+"scripts/generate_units.py" = ["RUF001"]
+"src/natural_tts/reading/data/units.py" = ["RUF001"]
 "tests/reading/*.py" = ["RUF001"]
 
 [tool.mypy]

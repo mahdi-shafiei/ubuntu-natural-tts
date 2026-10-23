@@ -116,3 +116,12 @@ $18.5M, $30k, $1.2B and €5M	eighteen point five million dollars, thirty thousa
 $4.99 and $1,200.50	four dollars and ninety-nine cents and one thousand two hundred dollars and fifty cents	currency
 U.S. Army and the U.S.A. and d.f. = 3	[US](/jˌuˈɛs/) Army and the [USA](/jˌuˌɛsˈA/) and [df](/dˌiˈɛf/) equals three	dotted initialisms as one word
 5 M NaCl and 70 B	five molar sodium chloride and seventy bytes	spaced single-letter units stay units
+# --- 0.6.0: units from MathCAT's table (NIST spellings)
+5 mmHg, 30 psi and 2 Torr	five millimeters of mercury, thirty pounds per square inch and two torr	unit, project additions
+3 kPa and 2 GHz and 1 K and 300 K	three kilopascals and two gigahertz and one kelvin and three hundred kelvins	unit, prefixes
+5 T and 3 N and 2 C	five teslas and three newtons and two coulombs	unit, spaced single letters
+Appendix 3C and plan 5N and vitamin C	Appendix 3C and plan 5N and vitamin C	not units when attached or without a number
+3 ft and 2 lb and 60 mph	three feet and two pounds and sixty miles per hour	unit, customary
+incubate for 2 h and 30 min at 37 °C	incubate for two hours and thirty minutes at thirty-seven degrees Celsius	unit, lab time
+he waited 3 d and 5 a	he waited three d and five a	ambiguous symbols are not units
+2 pc and 5 ly and 3 Mpc	two parsecs and five light years and three megaparsecs	unit, astronomy
