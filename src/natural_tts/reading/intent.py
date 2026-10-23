@@ -15,6 +15,7 @@ context.
 
 from __future__ import annotations
 
+import unicodedata
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterator
 
@@ -369,6 +370,56 @@ def _exponents(parent: ET.Element, children: list[ET.Element]) -> bool:
     return False
 
 
+def _plain_letter(text: str) -> str | None:
+    """The Latin letter behind a (script, bold, calligraphic) identifier."""
+    if len(text) != 1 or not text.isalpha():
+        return None
+    name = unicodedata.name(text, "")
+    if name.startswith("MATHEMATICAL ") and " CAPITAL " in name:
+        return name.rsplit(" ", 1)[-1]
+    if name.startswith("MATHEMATICAL ") and " SMALL " in name:
+        return name.rsplit(" ", 1)[-1].lower()
+    return text if text.isascii() else None
+
+
+def _function_calls(parent: ET.Element, children: list[ET.Element]) -> bool:
+    # f(x, y) and N(μ, σ²): ClearSpeak speaks the parentheses of a call with
+    # several arguments; an intent named after the head drops them
+    # ("f of x comma y", as lecturers say it).
+    for index, child in enumerate(children[:-1]):
+        if not _is(child, "mi") or parent.get("intent"):
+            continue
+        head = _plain_letter(_text(child))
+        if head is None or not _is(children[index + 1], "mo", "("):
+            continue
+        close = _closing(children, index + 1)
+        if close is None:
+            continue
+        inner = children[index + 2 : close]
+        commas = [i for i, c in enumerate(inner) if _is(c, "mo", ",")]
+        if not commas or _top_level_bars(inner):
+            continue
+        pieces: list[list[ET.Element]] = []
+        last = 0
+        for comma in [*commas, len(inner)]:
+            pieces.append(inner[last:comma])
+            last = comma + 1
+        if any(not piece for piece in pieces):
+            continue
+        names = [chr(ord("a") + i) for i in range(len(pieces))]
+        wrapped = _new(
+            "mrow", intent=f"{head}({','.join('$' + n for n in names)})"
+        )
+        wrapped.append(child)
+        wrapped.append(children[index + 1])
+        for name, piece in zip(names, pieces, strict=True):
+            wrapped.append(_group(piece, arg=name))
+        wrapped.append(children[close])
+        _replace(parent, index, close + 1, [wrapped])
+        return True
+    return False
+
+
 def _norm(parent: ET.Element, children: list[ET.Element]) -> bool:
     if parent.get("intent"):
         return False
@@ -669,6 +720,7 @@ _PASSES: tuple[Pass, ...] = (
     _expectation,
     _postfix,
     _exponents,
+    _function_calls,
     _norm,
     _relations,
     _operators,

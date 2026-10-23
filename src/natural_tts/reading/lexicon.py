@@ -114,7 +114,14 @@ class Lexicon:
     def _apply_gap(self, pattern: re.Pattern[str], text: str) -> str:
         def replace(match: re.Match[str]) -> str:
             entry = self.entries[int((match.lastgroup or "e0")[1:])]
-            return entry.spoken(match.group(0))
+            spoken = entry.spoken(match.group(0))
+            # "dosed p.o. Then": the abbreviation's last dot also ends the
+            # sentence, so the words keep a full stop there.
+            if entry.words and match.group(0).endswith("."):
+                following = text[match.end() :].lstrip()
+                if not following or following[0].isupper():
+                    spoken += "."
+            return spoken
 
         return pattern.sub(replace, text)
 

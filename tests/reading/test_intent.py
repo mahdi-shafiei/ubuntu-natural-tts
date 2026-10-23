@@ -115,6 +115,18 @@ class TestExponents:
         assert "<mtext>to the</mtext>" not in produce(latex)
 
 
+class TestFunctionCalls:
+    def test_multi_argument_calls_lose_their_parentheses(self):
+        assert 'intent="f($a,$b)"' in produce(r"f(x, y)")
+        assert 'intent="N($a,$b)"' in produce(
+            r"X \sim \mathcal{N}(\mu, \sigma^2)"
+        )
+
+    def test_single_argument_and_probability_are_untouched(self):
+        assert "intent" not in produce(r"g(x)")
+        assert produce(r"P(A, B)").count('intent="probability($a)"') == 1
+
+
 class TestRelations:
     def test_distributed_as(self):
         out = produce(r"X \sim \mathcal{N}(\mu, \sigma^2)")

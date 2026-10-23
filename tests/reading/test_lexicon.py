@@ -140,13 +140,25 @@ class TestPackagedInitialisms:
         )
         assert lexicon.apply("Cftr fl/fl mice") == "Cftr flox flox mice"
         assert lexicon.apply("10 mg/kg b.i.d. p.o. and 5 mg i.v. q.d.") == (
-            "10 mg/kg twice daily by mouth and 5 mg intravenous daily"
+            "10 mg/kg twice daily by mouth and 5 mg intravenous daily."
         )
         assert (
             lexicon.apply("C57BL/6J mice") == "C fifty-seven black six J mice"
         )
         assert lexicon.apply("ħ and ω") == "h bar and ω"
         assert lexicon.apply("energy ħω") == "energy h bar omega"
+
+    def test_words_entry_keeps_a_sentence_final_period(self):
+        lexicon = packaged_lexicon()
+        assert lexicon.apply("given p.o. Then rest.") == (
+            "given by mouth. Then rest."
+        )
+        assert lexicon.apply("dosed p.o.") == "dosed by mouth."
+        local = Lexicon([Entry("et al.", "", "ci", "et al")])
+        assert local.apply("Smith et al. showed") == "Smith et al showed"
+        assert local.apply("by Smith et al. The rest") == (
+            "by Smith et al. The rest"
+        )
 
     def test_company_names_from_the_review(self):
         lexicon = packaged_lexicon()
