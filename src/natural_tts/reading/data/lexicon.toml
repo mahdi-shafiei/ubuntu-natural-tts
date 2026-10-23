@@ -329,3 +329,8 @@ words = "intramuscular"
 head = "ħ"
 match = "exact"
 words = "h bar"
+
+[[entry]]
+head = "ħω"
+match = "exact"
+words = "h bar omega"

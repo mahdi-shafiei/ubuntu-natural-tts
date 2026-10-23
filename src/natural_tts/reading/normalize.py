@@ -119,6 +119,8 @@ def _biology(text: str, _: Options) -> str:
 
     def replace(m: re.Match[str]) -> str:
         token = m.group(0)
+        core = token.rstrip(".!?")  # sentence punctuation is not notation
+        tail = token[len(core) :]
         for reader in (
             biology.hgvs_words,
             biology.karyotype_words,
@@ -126,9 +128,9 @@ def _biology(text: str, _: Options) -> str:
             biology.genotype_words,
             biology.enzyme_words,
         ):
-            words = reader(token)
+            words = reader(core)
             if words is not None:
-                return protect(words)
+                return protect(words) + tail
         return token
 
     def karyotype(m: re.Match[str]) -> str:

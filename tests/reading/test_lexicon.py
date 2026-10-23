@@ -146,6 +146,7 @@ class TestPackagedInitialisms:
             lexicon.apply("C57BL/6J mice") == "C fifty-seven black six J mice"
         )
         assert lexicon.apply("ħ and ω") == "h bar and ω"
+        assert lexicon.apply("energy ħω") == "energy h bar omega"
 
     def test_company_names_from_the_review(self):
         lexicon = packaged_lexicon()
