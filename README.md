@@ -10,6 +10,28 @@ locally: no account, no cloud, no text leaves your machine.
 ![Ubuntu 24.04+](https://img.shields.io/badge/Ubuntu-24.04%2B-E95420?logo=ubuntu&logoColor=white)
 ![Python 3.11 | 3.12](https://img.shields.io/badge/python-3.11%20%7C%203.12-3776AB?logo=python&logoColor=white)
 
+## Quick start
+
+```bash
+git clone https://github.com/mahdi-shafiei/ubuntu-natural-tts.git
+cd ubuntu-natural-tts
+./install.sh            # add --gpu on NVIDIA machines for CUDA PyTorch
+```
+
+The installer downloads about 1.6 GB (PyTorch and the voice models) and
+needs no logout. Then:
+
+| Keys | Action |
+|---|---|
+| <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd> | Read the highlighted text |
+| <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> | Read the clipboard (press <kbd>Ctrl</kbd>+<kbd>C</kbd> first; needed in ONLYOFFICE and other canvas-based editors) |
+| <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd> | Stop |
+
+New text interrupts whatever is playing. In Firefox, open Reader View
+(<kbd>F9</kbd>) and press the headphones button; the speed slider works.
+
+If something stays silent, run `natural-tts doctor`.
+
 ## Hear the difference
 
 The same sentence, read by each engine. Press play on each:
@@ -36,12 +58,55 @@ https://github.com/user-attachments/assets/07156e2c-69fa-446a-9be4-e507cbc39142
 | **License** | GPL-3.0 | GPL-3.0 engine; voice license varies | Apache-2.0 |
 | **Listen** | [espeak.mp3](docs/samples/espeak.mp3) | [piper.mp3](docs/samples/piper.mp3) | [kokoro.mp3](docs/samples/kokoro.mp3) |
 
-## Hear the reading front end
+## Features
 
-Since 0.2.0 the hotkey reads technical text the way a person would. Each
-clip plays the same sentence twice: first as 0.1.1 read it, then as
-0.2.0 reads it. The red tick marks where the old chunker cut the
-sentence.
+- **Natural voices, locally.** Kokoro for the hotkeys, Piper as the
+  system-wide [Speech Dispatcher](https://github.com/brailcom/speechd)
+  voice. CPU is enough; an NVIDIA GPU is optional.
+- **Works in every app.** Highlighted text (X11 and Wayland), the
+  clipboard, or any program that speaks through Speech Dispatcher.
+- **Reads PDFs properly.** Words hyphenated across line breaks are
+  re-joined and hard wraps removed before speaking.
+- **Reads like a person.** Numbers, dates, units, abbreviations and
+  symbols are spoken as words: `p < 0.05` is "p is less than zero point
+  zero five", `Fig. 3` is "Figure three", `E. coli` is pronounced
+  correctly, `[12]` citation markers are skipped. Company and product
+  names are read whole, initialisms as one smooth word, IEEE as "I triple
+  E". Your own pronunciations go in `~/.config/natural-tts/lexicon.toml`.
+- **Reads structure and code.** Headings, lists, quotes and tables get
+  their own pauses; a table is read caption first, then each row as
+  "Heading. Column: value." sentences; code blocks in Markdown, HTML,
+  reStructuredText, LaTeX, Org, AsciiDoc, prompts and diffs are read as
+  words (`get_user_name(x)` is "get user name x"), with `code_level`
+  choosing how much punctuation you hear.
+- **Reads math the way a lecturer says it.** LaTeX, Unicode formulas and
+  MathML on web pages go through [MathCAT](https://nsoiffer.github.io/MathCAT/)
+  after the formula is annotated with what it means: `P(A \mid B)` is
+  "probability of A given B", `E[X]` "expected value of X", `A^{-1}` "A
+  inverse", `\frac{a}{b}` "a over b", `e^{-x^2}` "e to the negative x
+  squared", `\int_0^1 f(x)\,dx` "the integral from 0 to 1 of f of x d x".
+- **Reads science notation.** Compounds are named in prose (`CO2` is
+  "carbon dioxide") and spelled in equations; gene variants, karyotypes,
+  genotypes, restriction enzymes and cell lines follow the nomenclature
+  standards and the way practitioners say them; units use NIST's spoken
+  names.
+- **Fast start, instant stop.** Speech starts after the first short chunk;
+  stop takes effect within about a tenth of a second.
+- **Self-healing.** Audio-device or synthesis errors are logged and
+  recovered from; services restart automatically.
+- **One settings file.** Change voices and speeds in
+  `~/.config/natural-tts/settings.toml`, then run `natural-tts apply`.
+- **Leaves your system alone.** Your other Speech Dispatcher voices and
+  GNOME shortcuts are kept; `natural-tts teardown` reverts every change.
+- **Private.** Nothing is sent anywhere; the Piper server listens on
+  127.0.0.1 only.
+
+## What it sounds like
+
+Each clip plays the same selection twice: the raw reading first, then
+natural-tts. Ticks mark where the text was cut into speech.
+
+### Prose
 
 **Numbers, units and symbols** in a methods sentence:
 
@@ -92,18 +157,15 @@ https://github.com/user-attachments/assets/789baf62-d685-4d0d-9a0a-da9d1c0647e7
 | `Fig. 3`, `Eq. 2`, `et al.`, `e.g.` | Figure three, Equation two, et al, for example |
 | `Dr. Smith`, `St. Louis`, `Elm St.` | Doctor Smith, Saint Louis, Elm Street |
 | `2026-10-21`, `14:30`, `$5.50`, `v2.1.0` | October twenty-first, twenty twenty-six; fourteen thirty; five dollars and fifty cents; version two point one point zero |
-| `x²`, `1.5 × 10^-3`, `α` | x squared, one point five times ten to the power of minus three, alpha |
-| `E. coli`, `in vitro`, `Cas9`, `H2O` | pronounced from the built-in lexicon; H two O |
+| `70B`, `12k users`, `$18.5M` | seventy billion, twelve thousand users, eighteen point five million dollars |
+| `LinkedIn`, `PyTorch`, `ODE`, `GPUs`, `IEEE` | read whole by the engine; O D E as one word; G P Us; I triple E |
+| `E. coli`, `in vitro`, `Cas9`, `CO2` | pronounced from the built-in lexicon; carbon dioxide |
 | `[12]`, `(Smith et al., 2019)` | skipped (`citations = "read"` says them) |
 
-Everything is a plain rule you can read in `src/natural_tts/reading/`,
-and `reading.enabled = false` restores the raw reading.
+Every rule is plain code in `src/natural_tts/reading/`, and
+`reading.enabled = false` restores the raw reading.
 
 ### Structure and code
-
-Since 0.3.0 the hotkey also hears the shape of what you selected. Each
-clip plays the same selection twice: as 0.2.1 read it, then as 0.3.0
-reads it. Green ticks mark segment boundaries.
 
 **A README fragment** with a heading, a list and a table:
 
@@ -140,8 +202,7 @@ https://github.com/user-attachments/assets/948609bc-0772-4764-8f97-f25dc3e93ca5
 
 
 
-**An HTML selection**, as Firefox hands it over. The old version read the
-tags aloud:
+**An HTML selection**, as Firefox hands it over:
 
 ```html
 <h2>Results</h2>
@@ -156,10 +217,6 @@ https://github.com/user-attachments/assets/41a6809b-6c8b-4a85-beda-5718b5203ff1
 
 ### Math
 
-Since 0.4.0 formulas are spoken by MathCAT. Each clip plays the same
-selection twice: as 0.3.0 read it (LaTeX read as words), then as 0.4.0
-reads it. Green ticks mark segment boundaries.
-
 **Inline formulas in a sentence**, as a paper source carries them:
 
 ```latex
@@ -172,7 +229,7 @@ https://github.com/user-attachments/assets/3aca0af4-e711-4c56-b03f-40c01981a542
 
 
 
-**A display formula** between paragraphs, with MathCAT's own pauses:
+**A display formula** between paragraphs:
 
 ```latex
 The Gaussian integral
@@ -202,69 +259,6 @@ https://github.com/user-attachments/assets/88efb6a4-6564-43b6-b853-96e2169632ee
 
 
 
-## Quick start
-
-```bash
-git clone https://github.com/mahdi-shafiei/ubuntu-natural-tts.git
-cd ubuntu-natural-tts
-./install.sh            # add --gpu on NVIDIA machines for CUDA PyTorch
-```
-
-The installer downloads about 1.6 GB (PyTorch and the voice models) and
-needs no logout. Then:
-
-| Keys | Action |
-|---|---|
-| <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>R</kbd> | Read the highlighted text |
-| <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> | Read the clipboard (press <kbd>Ctrl</kbd>+<kbd>C</kbd> first; needed in ONLYOFFICE and other canvas-based editors) |
-| <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>S</kbd> | Stop |
-
-New text interrupts whatever is playing. In Firefox, open Reader View
-(<kbd>F9</kbd>) and press the headphones button; the speed slider works.
-
-If something stays silent, run `natural-tts doctor`.
-
-## Features
-
-- **Natural voices, locally.** Kokoro for the hotkeys, Piper as the
-  system-wide [Speech Dispatcher](https://github.com/brailcom/speechd)
-  voice. CPU is enough; an NVIDIA GPU is optional.
-- **Works in every app.** Highlighted text (X11 and Wayland), the
-  clipboard, or any program that speaks through Speech Dispatcher.
-- **Reads PDFs properly.** Words hyphenated across line breaks are
-  re-joined and hard wraps removed before speaking.
-- **Reads like a person.** Numbers, dates, units, abbreviations and
-  symbols are spoken as words on the hotkey path: `p < 0.05` is "p is
-  less than zero point zero five", `Fig. 3` is "Figure three", `E. coli`
-  is pronounced correctly, and `[12]` citation markers are skipped. Add
-  your own pronunciations in `~/.config/natural-tts/lexicon.toml`.
-- **Reads structure and code.** Headings, lists, quotes and tables get
-  their own pauses; a table is read caption first, then each row as
-  "Heading. Column: value." sentences; code blocks in Markdown, HTML,
-  reStructuredText, LaTeX, Org, AsciiDoc, prompts and diffs are read as
-  words (`get_user_name(x)` is "get user name x"), with `code_level`
-  choosing how much punctuation you hear.
-- **Reads names and initialisms.** LinkedIn, PyTorch and OpenAI are left
-  to the engine, which reads them whole; ODE, DNA and GPUs are spelled as
-  one smooth word; IEEE is "I triple E"; a heading in capitals is read as
-  words. Names the engine gets wrong go in your lexicon file.
-- **Reads math.** LaTeX (`$…$`, `$$…$$`, equation environments), Unicode
-  formulas and MathML on web pages are spoken the way a math teacher
-  reads them, through [MathCAT](https://nsoiffer.github.io/MathCAT/):
-  `\frac{a}{b}` is "a over b", `\int_0^1 f(x)\,dx` is "the integral
-  from 0 to 1 of f of x d x", with "end fraction" and "end root" marking
-  nested scope. `math_style` chooses ClearSpeak or SimpleSpeak.
-- **Fast start, instant stop.** Speech starts after the first short chunk;
-  stop takes effect within about a tenth of a second.
-- **Self-healing.** Audio-device or synthesis errors are logged and
-  recovered from; services restart automatically.
-- **One settings file.** Change voices and speeds in
-  `~/.config/natural-tts/settings.toml`, then run `natural-tts apply`.
-- **Leaves your system alone.** Your other Speech Dispatcher voices and
-  GNOME shortcuts are kept; `natural-tts teardown` reverts every change.
-- **Private.** Nothing is sent anywhere; the Piper server listens on
-  127.0.0.1 only.
-
 ## How it works
 
 ```mermaid
@@ -280,6 +274,7 @@ flowchart LR
     PS -->|HTTP 127.0.0.1| PIPER[Piper server<br/>model kept loaded]
     HK --> RS[natural-tts read]
     RS -->|Unix socket| KD[Kokoro daemon<br/>model kept loaded]
+    KD -->|MathML| MC[MathCAT helper]
     PIPER --> AU[PipeWire / PulseAudio]
     KD --> AU
 ```
@@ -290,12 +285,16 @@ flowchart LR
 - **Kokoro** sounds more natural but takes a few seconds to load, so it
   runs as a background daemon. Hotkeys send it text over a private Unix
   socket.
-- Both services and the Speech Dispatcher configuration are generated from
-  the single `settings.toml`.
+- **The reading front end** turns a selection into speakable segments
+  before Kokoro sees it: it finds the structure (headings, lists, tables,
+  code, formulas), rewrites numbers, units, abbreviations and notation
+  into words, and applies the lexicon.
 - **MathCAT** speaks formulas. The daemon starts `natural-tts-mathcat`
   (a helper built from the MathCAT crate, downloaded by `setup`) once and
-  sends it MathML; its answer carries the pauses and spelled letters that
-  become the spoken segments.
+  sends it MathML annotated with the formula's meaning; its answer, with
+  pauses and spelled letters, becomes the spoken segment.
+- Both services and the Speech Dispatcher configuration are generated from
+  the single `settings.toml`.
 
 ## Configuration
 
@@ -327,7 +326,7 @@ automatically.
 Pronunciations the engine gets wrong go in
 `~/.config/natural-tts/lexicon.toml`, which is merged over the built-in
 list on the next `apply`. Phonemes use Kokoro's alphabet (`A` = ay,
-`I` = eye, `O` = oh; `ˈ` marks stress):
+`I` = eye, `O` = oh; `ˈ` marks stress); `words` replaces text instead:
 
 ```toml
 [[entry]]
@@ -338,6 +337,11 @@ misaki = "zˌImOmˈOnəs"
 head = "ACS"          # said as a word, not spelled
 match = "exact"
 misaki = "ˈæks"
+
+[[entry]]
+head = "IEEE"
+match = "exact"
+words = "I triple E"
 ```
 
 ### Voices
@@ -363,13 +367,16 @@ research-only dataset and `en_US-ryan-high` a non-commercial one.
 
 Other languages work too: Piper has voices for about 40 languages, and
 Kokoro covers English, Spanish, French, Hindi, Italian, Japanese,
-Portuguese and Mandarin.
+Portuguese and Mandarin. The structure reading works with every Kokoro
+voice; the English word rules run only for English voices, and MathCAT
+speaks formulas in Spanish, French, Portuguese and Chinese for those
+voices.
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
-| `natural-tts setup` | Configure services, Speech Dispatcher and hotkeys |
+| `natural-tts setup` | Configure services, Speech Dispatcher and hotkeys; install the MathCAT helper |
 | `natural-tts apply` | Apply `settings.toml` and restart services |
 | `natural-tts doctor` | Check every component and print fixes |
 | `natural-tts read selection` / `read clipboard` | Read aloud (what the hotkeys run) |
@@ -397,7 +404,7 @@ Each failing check prints the command that fixes it. Common cases:
 | No sound at all | `doctor` checks that ALSA is routed to your sound server. On PipeWire the fix is `pipewire-alsa`; on PulseAudio it is `libasound2-plugins` (never install `pipewire-alsa` there: it replaces PulseAudio). |
 | Gaps between sentences | Synthesis is slower than playback on this CPU. Reinstall with `./install.sh --gpu` on NVIDIA machines, or raise `kokoro.speed`. |
 | Speech stopped after unplugging headphones | Errors are recovered automatically on the next request; if not, `systemctl --user restart natural-tts-kokoro.service`. |
-| Hotkeys gone from Settings > Keyboard | `doctor` reports them missing; `natural-tts setup` adds them back without touching anything else. Before 0.4.1, running the project's own test suite on a desktop session removed every custom shortcut (the integration test now runs on a private D-Bus session). |
+| Hotkeys gone from Settings > Keyboard | `doctor` reports them missing; `natural-tts setup` adds them back without touching anything else. |
 | "daemon is not running or still starting" right after an upgrade | `setup` restarts the daemon and the old socket file lingers for a few seconds. Wait for `natural-tts ready` in `journalctl --user -u natural-tts-kokoro.service`, then try again. |
 | A number, unit, date or abbreviation is read in a way you do not want | The reading rules are plain code in `src/natural_tts/reading/`; `reading.enabled = false` in `settings.toml` restores the raw reading, and `reading.citations = "read"` says citation markers. Open an issue with the sentence and what you expected. |
 | A name or term is mispronounced | Add it to `~/.config/natural-tts/lexicon.toml` (see [Configuration](#configuration)) and run `natural-tts apply`. Company and product names are read by the engine as written, so an entry with `match = "exact"` and the phonemes (or `words`) fixes one name without touching others. |
@@ -406,8 +413,8 @@ Each failing check prints the command that fixes it. Common cases:
 | Code is read with too much or too little punctuation | `reading.code_level` is 1 (operators only), 2 (adds brackets, separators and indentation) or 3 (every symbol). |
 | A web page's headings and lists are read as one paragraph | Only Firefox puts the selection's HTML on the clipboard; Chromium-based browsers hand over plain text, so structure is recognised there only from Markdown markers. Copying with <kbd>Ctrl</kbd>+<kbd>C</kbd> and pressing <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> can help, since the copy clipboard often carries HTML. |
 | A formula is read as a jumble of words, or `doctor` says the Math helper is missing | `natural-tts apply` downloads the release's MathCAT helper (`~/.local/share/natural-tts/bin/natural-tts-mathcat`). Offline, or on a platform without a binary, build it: `natural-tts setup --helper-source /path/to/clone/helper/mathcat` (needs `cargo`). Until then formulas are read as words. |
-| A formula is spoken in a way you do not want | `reading.math_style = "simplespeak"` is shorter; see the known misreadings under [FAQ](#faq). Formulas with unbalanced delimiters are read as words. "Divides" for a conditional bar, "cap p" or "raised to the … power" mean an older helper or package: run `natural-tts apply`. |
-| Upgrading left the old behaviour running | Since 0.1.2 `./install.sh` restarts the services. On an older install run `natural-tts apply` after `git pull && ./install.sh`. |
+| A formula is spoken in a way you do not want | `reading.math_style = "simplespeak"` is shorter; see the known limits under [FAQ](#faq). Formulas with unbalanced delimiters are read as words. "Divides" for a conditional bar, "cap p" or "raised to the … power" mean a helper or package older than the current release: run `natural-tts apply`. |
+| Upgrading left the old behaviour running | `./install.sh` restarts the services; `natural-tts apply` does too. |
 
 Logs: `journalctl --user -u natural-tts-kokoro.service` and
 `journalctl --user -u natural-tts-piper.service`.
@@ -438,22 +445,34 @@ clipboard` and `natural-tts stop` in your keyboard settings. The installer
 uses apt; other distributions need the equivalent packages.
 
 **Can I use a different voice or language?**
-Yes, see [Configuration](#configuration). The structure reading (headings,
-lists, code) works with every Kokoro voice; the English word rules
-(numbers, units, abbreviations, citations) run only for English voices.
+Yes, see [Configuration](#configuration).
 
 **Why does it say "Figure three" when the text says "Fig. 3"?**
-Because that is what a person reading aloud says. Since 0.2.0 the hotkey
-rewrites numbers, dates, units, abbreviations and symbols into words
-before Kokoro sees them, so `p < 0.05` is "p is less than zero point zero
-five" rather than silence for the `<`. Everything is a readable rule; set
+Because that is what a person reading aloud says. The hotkey rewrites
+numbers, dates, units, abbreviations and symbols into words before Kokoro
+sees them, so `p < 0.05` is "p is less than zero point zero five" rather
+than silence for the `<`. Everything is a readable rule; set
 `reading.enabled = false` to hear the raw text instead.
 
 **How do I fix the pronunciation of a word?**
-Put it in `~/.config/natural-tts/lexicon.toml` with Kokoro's phonemes
-(an example is in [Configuration](#configuration)) and run
+Put it in `~/.config/natural-tts/lexicon.toml` with Kokoro's phonemes or a
+`words` replacement (examples in [Configuration](#configuration)) and run
 `natural-tts apply`. The built-in list covers common species names,
-Latin phrases and gene or method names.
+Latin phrases, gene and method names, and company names the engine
+misreads.
+
+**How are company names, product names and acronyms read?**
+As the speech engine reads them. Camel-case names (LinkedIn, GitHub,
+PyTorch, OpenAI) and mixed tokens (mRNA, HbA1c, p53) go to the engine
+whole; it looks the cased spelling up, splits what it does not know and
+reads each half, so no list of brands is needed. Two- and three-letter
+capital runs (ODE, DNA, GPU, US) are spelled as one word with the stress
+on the last letter, the engine's own convention; longer runs are the
+engine's: it spells what it does not know and says the acronyms it knows
+as words (NASA, COVID, CRISPR). Mixed readings need an entry: IEEE ("I
+triple E") and the company names the engine misreads are packaged, and
+your lexicon file takes the rest. SQL stays "sequel". A sentence or
+heading written in capitals is read as words.
 
 **How is code read?**
 Identifiers are split into words (`get_user_name` is "get user name"),
@@ -463,31 +482,39 @@ is recognised in Markdown, HTML, reStructuredText, LaTeX, Org, AsciiDoc,
 shell transcripts, Python prompts, diffs and plain indented code. The code
 voice is the reading voice.
 
+**How are tables read?**
+Caption first, then "Table with 3 rows and 3 columns", the column names
+once, each row as "Row heading. Column: value. Column: value." with
+"blank" for an empty cell, and "End of table". Rows get a longer pause
+than cells. This follows the published listening study of spoken tables
+(header-value pairs with a pause hierarchy) and what NVDA reads in say-all
+mode; two-row headers are joined ("Score, Dev"), spanning cells repeat
+their value, and a Markdown table's first column names the row.
+
 **Does it read math?**
-Yes, since 0.4.0, and since 0.6.0 the way a lecturer would say it. LaTeX
-between `$…$`, `$$…$$`, `\(…\)`, `\[…\]` or in `equation`, `align` and
-similar environments, Unicode formulas on their own line (`E = mc²`, as
-PDFs paste them), and MathML on web pages (Firefox hands it over) are
-converted to MathML and spoken by [MathCAT](https://nsoiffer.github.io/MathCAT/)
-in ClearSpeak, the style students understood best in the published
-comparison. Before MathCAT sees it, the formula is annotated with what it
-means, using the W3C MathML intent vocabulary: `P(A \mid B)` is
-"probability of A given B", `E[X]` "expected value of X",
-`\operatorname{Var}(X)` "variance of X", `X^T` "X transpose", `A^{-1}`
-"A inverse", `X \sim N(\mu,\sigma^2)` "X is distributed as N of mu, sigma
-squared", `\arg\max_\theta` "arg max over theta of", `\nabla \cdot E`
-"the divergence of E", `|\psi\rangle` "ket psi". Capitals are not
-announced, fractions are "a over b" with "end fraction" only when nested,
-`e^{-x^2}` is "e to the negative x squared", `\ln` is "natural log".
-`reading.math_style = "simplespeak"` is terser. Spanish, French,
-Portuguese and Chinese voices get MathCAT's rules for those languages;
-other voices get English. Short fragments inside prose such as `x²`,
-`5 ± 2` or `p < 0.05` keep the word rules. Known limits: the set-builder
-bar in `\{x \mid x > 2\}` is "divides", `\mathbb{R}^n` is "the real
-numbers to the n-th power", a two-sided Dirac bracket `\langle\phi|\psi
-\rangle` is read as its contents ("phi psi") because its meaning depends
-on context, and `KL(p \| q)` is "K L divergence from p to q". Dollar
-amounts (`$5 and $10`) and shell variables are never taken for formulas.
+Yes, the way a lecturer would say it. LaTeX between `$…$`, `$$…$$`,
+`\(…\)`, `\[…\]` or in `equation`, `align` and similar environments,
+Unicode formulas on their own line (`E = mc²`, as PDFs paste them), and
+MathML on web pages (Firefox hands it over) are converted to MathML and
+spoken by [MathCAT](https://nsoiffer.github.io/MathCAT/) in ClearSpeak, the
+style students understood best in the published comparison. Before
+MathCAT sees it, the formula is annotated with what it means, using the
+W3C MathML intent vocabulary: `P(A \mid B)` is "probability of A given B",
+`E[X]` "expected value of X", `\operatorname{Var}(X)` "variance of X",
+`X^T` "X transpose", `A^{-1}` "A inverse", `X \sim N(\mu,\sigma^2)` "X is
+distributed as N of mu, sigma squared", `f(x, y)` "f of x, y",
+`\arg\max_\theta` "arg max over theta of", `\nabla \cdot E` "the
+divergence of E", `|\psi\rangle` "ket psi". Capitals are not announced,
+fractions are "a over b" with "end fraction" only when nested, `e^{-x^2}`
+is "e to the negative x squared", `\ln` is "natural log".
+`reading.math_style = "simplespeak"` is terser. Short fragments inside
+prose such as `x²`, `5 ± 2` or `p < 0.05` keep the word rules. Known
+limits: the set-builder bar in `\{x \mid x > 2\}` is "divides",
+`\mathbb{R}^n` is "the real numbers to the n-th power", a two-sided Dirac
+bracket `\langle\phi|\psi\rangle` is read as its contents ("phi psi")
+because its meaning depends on context, and `KL(p \| q)` is "K L
+divergence from p to q". Dollar amounts (`$5 and $10`) and shell variables
+are never taken for formulas.
 
 **Does it read chemistry, biology and physics notation?**
 Common compounds are named in prose ("carbon dioxide", "sulfuric acid",
@@ -500,7 +527,7 @@ lines "HEK two ninety-three", and dosing abbreviations their written
 replacements ("twice daily", "by mouth"). Units use NIST's spoken names
 ("five kilopascals", "three hundred kelvins", "millimeters of mercury");
 `ħ` is "h bar". The conventions and their sources are listed in the
-changelog for 0.6.0; what no source settles is marked as a project
+[changelog](CHANGELOG.md); what no source settles is marked as a project
 decision there.
 
 **What is the MathCAT helper?**
@@ -508,29 +535,6 @@ A 5 MB program, `natural-tts-mathcat`, built from the MathCAT Rust crate
 with its speech rules embedded, started once by the daemon and kept
 running. `setup` downloads it from this project's release for your
 architecture and checks its SHA-256; `doctor` shows its version.
-
-**How are company names, product names and acronyms read?**
-As the speech engine reads them, since 0.5.0. Camel-case names (LinkedIn,
-GitHub, PyTorch, OpenAI) and mixed tokens (mRNA, HbA1c, p53) go to the
-engine whole; it looks the cased spelling up, splits what it does not
-know and reads each half, so no list of brands is needed. Two- and
-three-letter capital runs (ODE, DNA, GPU, US) are spelled as one word
-with the stress on the last letter, the engine's own convention; longer
-runs are the engine's: it spells what it does not know and says the
-acronyms it knows as words (NASA, COVID, CRISPR). Mixed readings need an
-entry: IEEE ("I triple E") and nineteen company names the engine misread
-are packaged, and your `~/.config/natural-tts/lexicon.toml` takes the
-rest. SQL stays "sequel". A sentence or heading written in capitals is
-read as words.
-
-**How are tables read?**
-Caption first, then "Table with 3 rows and 3 columns", the column names
-once, each row as "Row heading. Column: value. Column: value." with
-"blank" for an empty cell, and "End of table". Rows get a longer pause
-than cells. This follows the one published listening study of spoken
-tables (header-value pairs with a pause hierarchy) and what NVDA reads in
-say-all mode; two-row headers are joined ("Score, Dev"), spanning cells
-repeat their value, and a Markdown table's first column names the row.
 
 **Can I skip citation markers like [12] or (Smith et al., 2019)?**
 They are skipped by default; `reading.citations = "read"` says them.
@@ -551,12 +555,15 @@ dbus-run-session -- uv run pytest -m integration   # real gsettings
 The code is test-driven, strictly typed (mypy `--strict`) and formatted
 with ruff. All system access goes through small injectable interfaces, so
 the unit tests run without audio hardware, Kokoro or a desktop session.
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+The spoken forms are pinned by golden files (`tests/reading/*.tsv`), one
+row per behaviour with its source. See [CONTRIBUTING.md](CONTRIBUTING.md)
+and the [changelog](CHANGELOG.md) for the history.
 
 ## Credits
 
 - [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) by hexgrad (Apache-2.0)
 - [Piper](https://github.com/OHF-Voice/piper1-gpl) by the Open Home Foundation (GPL-3.0-or-later)
+- [MathCAT](https://github.com/NSoiffer/MathCAT) by Neil Soiffer (MIT)
 - [Speech Dispatcher](https://github.com/brailcom/speechd) (GPL-2.0-or-later)
 
 natural-tts itself is released under the [MIT license](LICENSE).
