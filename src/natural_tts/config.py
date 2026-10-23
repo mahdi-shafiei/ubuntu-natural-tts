@@ -24,6 +24,9 @@ KOKORO_REPO_ID = "hexgrad/Kokoro-82M"
 RELEASE_DOWNLOADS = (
     "https://github.com/mahdi-shafiei/ubuntu-natural-tts/releases/download"
 )
+# The release whose assets carry the helper the package expects; bumped only
+# when helper/mathcat changes, so a package patch release needs no download.
+HELPER_VERSION = "0.6.0"
 
 # Kokoro is weakest on very short inputs and rushes on very long ones (its
 # VOICES.md recommends roughly 100-200 phoneme tokens), so text is chunked to

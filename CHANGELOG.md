@@ -6,6 +6,25 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-22
+
+### Fixed
+
+- A call with several arguments (`f(x, y)`, `N(\mu, \sigma^2)`) was spoken
+  with "open paren … close paren"; it is "f of x, y" now.
+- An abbreviation read as words at the end of a sentence (`p.o.`)
+  swallowed the full stop, running two sentences together.
+- A variant or enzyme name followed by sentence punctuation was left
+  unread.
+
+### Changed
+
+- The MathCAT helper's version is tracked separately from the package's,
+  so a package patch release no longer downloads a new helper.
+- The README is written as a product page; the release history lives in
+  this changelog.
+
+
 ## [0.6.0] - 2026-10-22
 
 ### Added

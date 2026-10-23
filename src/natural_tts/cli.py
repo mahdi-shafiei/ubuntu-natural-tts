@@ -24,6 +24,7 @@ from typing import BinaryIO, TextIO
 from natural_tts import __version__
 from natural_tts.config import (
     DEFAULT_SETTINGS_TOML,
+    HELPER_VERSION,
     RELEASE_DOWNLOADS,
     Paths,
     Settings,
@@ -223,13 +224,12 @@ def _mathcat_is_current(env: Env, helper: Path) -> bool:
     if not helper.exists():
         return False
     result = env.runner((str(helper), "--version"))
-    return result.ok and result.text.split()[-1:] == [__version__]
+    return result.ok and result.text.split()[-1:] == [HELPER_VERSION]
 
 
 def _download_mathcat(env: Env) -> bytes | None:
-    url = (
-        f"{RELEASE_DOWNLOADS}/v{__version__}/{_HELPER_NAME}-linux-{env.machine}"
-    )
+    asset = f"{_HELPER_NAME}-linux-{env.machine}"
+    url = f"{RELEASE_DOWNLOADS}/v{HELPER_VERSION}/{asset}"
     try:
         binary = env.fetch(url)
         digest = env.fetch(url + ".sha256")

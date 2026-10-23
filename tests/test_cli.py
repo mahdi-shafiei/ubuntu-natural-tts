@@ -10,6 +10,7 @@ from natural_tts import __version__
 from natural_tts.cli import Env, main
 from natural_tts.config import (
     DEFAULT_SETTINGS_TOML,
+    HELPER_VERSION,
     KOKORO_SERVICE,
     PIPER_SERVICE,
     RELEASE_DOWNLOADS,
@@ -29,7 +30,7 @@ from tests.fakes import LocalHTTPServer, RecordingRunner, make_settings
 SYSTEM_CONF = "LogLevel 3\n"
 HELPER_BINARY = b"\x7fELF fake mathcat helper"
 HELPER_URL = (
-    f"{RELEASE_DOWNLOADS}/v{__version__}/natural-tts-mathcat-linux-x86_64"
+    f"{RELEASE_DOWNLOADS}/v{HELPER_VERSION}/natural-tts-mathcat-linux-x86_64"
 )
 
 
@@ -48,7 +49,7 @@ class World:
         self.execs: list[tuple[str, list[str]]] = []
         self.daemons: list[object] = []
         self.gsettings_ok = True
-        self.helper_version = __version__
+        self.helper_version = HELPER_VERSION
         self.tools = {"cargo"}
         self.fetched: list[str] = []
         self.fetch_error: Exception | None = None
@@ -327,6 +328,10 @@ class TestMathHelper:
         helper.write_bytes(b"installed")
         world.run("setup")
         assert world.fetched == [] and helper.read_bytes() == b"installed"
+
+    def test_helper_version_is_not_the_package_version(self):
+        # A package patch release must not force a helper download.
+        assert HELPER_VERSION.count(".") == 2
 
     def test_helper_from_another_version_is_replaced(self, world):
         helper = world.paths.mathcat_helper
