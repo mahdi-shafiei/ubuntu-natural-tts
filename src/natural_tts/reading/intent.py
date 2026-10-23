@@ -337,6 +337,38 @@ def _is_double_bar(node: ET.Element) -> bool:
     )
 
 
+def _simple_exponent(exponent: ET.Element) -> bool:
+    """ClearSpeak's simple exponents: a number, a letter, or a negative one."""
+    while _local(exponent) == "mrow" and len(exponent) == 1:
+        exponent = exponent[0]  # braces: x^{2} arrives as an mrow
+    if _local(exponent) in {"mi", "mn"}:
+        return True
+    if _local(exponent) == "mrow" and len(exponent) == 2:
+        sign, value = list(exponent)
+        return _is(sign, "mo", "−", "-") and _local(value) in {"mi", "mn"}
+    return False
+
+
+def _exponents(parent: ET.Element, children: list[ET.Element]) -> bool:
+    # e^{-x^2}: "e to the negative x squared" rather than ClearSpeak's
+    # "e raised to the negative x squared power" (handbooks, ETS RR-16-23).
+    for index, child in enumerate(children):
+        if not _is(child, "msup") or child.get("intent") or len(child) != 2:
+            continue
+        base, exponent = list(child)
+        if _simple_exponent(exponent) or _local(base) not in {
+            "mi",
+            "mn",
+            "mrow",
+        }:
+            continue
+        row = _new("mrow")
+        row.extend([base, _mtext("to the"), exponent])
+        _replace(parent, index, index + 1, [row])
+        return True
+    return False
+
+
 def _norm(parent: ET.Element, children: list[ET.Element]) -> bool:
     if parent.get("intent"):
         return False
@@ -636,6 +668,7 @@ _PASSES: tuple[Pass, ...] = (
     _probability,
     _expectation,
     _postfix,
+    _exponents,
     _norm,
     _relations,
     _operators,

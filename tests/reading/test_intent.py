@@ -99,6 +99,22 @@ class TestPostfixAndFences:
         assert 'intent="norm($a)"' in produce(r"\|x\|_2")
 
 
+class TestExponents:
+    @pytest.mark.parametrize(
+        "latex", [r"e^{-x^2}", r"x^{n+1}", r"e^{i\pi}", r"e^{x^2}"]
+    )
+    def test_compound_exponents_are_to_the(self, latex):
+        out = produce(latex)
+        # The outer power is gone; an inner x^2 in the exponent may stay.
+        assert re.search(r"<mi>[ex]</mi> ?<mtext>to the</mtext>", out)
+
+    @pytest.mark.parametrize(
+        "latex", [r"x^2", r"x^n", r"x^{-1}", r"2^{10}", r"A^{-1}", r"A^T"]
+    )
+    def test_simple_exponents_stay_with_the_engine(self, latex):
+        assert "<mtext>to the</mtext>" not in produce(latex)
+
+
 class TestRelations:
     def test_distributed_as(self):
         out = produce(r"X \sim \mathcal{N}(\mu, \sigma^2)")

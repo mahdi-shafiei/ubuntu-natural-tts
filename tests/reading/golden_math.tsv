@@ -11,11 +11,11 @@ a_1 + a_2 + \cdots + a_n	latex	clearspeak	a sub 1, plus a sub 2, plus dot dot do
 \sqrt{b^2 - 4ac}	latex	clearspeak	the square root of b squared minus 4 a c, end root
 x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}	latex	clearspeak	x is equal to, negative b plus or minus the square root of b squared minus 4 a c, end root, over 2 a, end fraction
 \sqrt[3]{x}	latex	clearspeak	the cube root of x
-e^{i\pi} + 1 = 0	latex	clearspeak	e raised to the i pi power plus 1 is equal to 0
+e^{i\pi} + 1 = 0	latex	clearspeak	e to the i pi plus 1 is equal to 0
 \sum_{i=1}^{n} i = \frac{n(n+1)}{2}	latex	clearspeak	the sum from i is equal to 1, to n of i, is equal to n open paren n plus 1 close paren over 2
 \prod_{k=1}^{n} k = n!	latex	clearspeak	the product from k is equal to 1, to n of k, is equal to n factorial
 \int_0^1 f(x)\,dx	latex	clearspeak	the integral from 0, to 1 of f of x d x
-\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}	latex	clearspeak	the integral from negative infinity, to infinity of, e raised to the negative x squared power d x, is equal to the square root of pi, end root
+\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}	latex	clearspeak	the integral from negative infinity, to infinity of, e to the negative x squared d x, is equal to the square root of pi
 \lim_{x \to 0} \frac{\sin x}{x} = 1	latex	clearspeak	the limit as x approaches 0, of sine x over x, is equal to 1
 \frac{dy}{dx}	latex	clearspeak	d y over d x
 \frac{\partial f}{\partial x}	latex	clearspeak	partial derivative f over partial derivative x
