@@ -406,7 +406,7 @@ Each failing check prints the command that fixes it. Common cases:
 | Code is read with too much or too little punctuation | `reading.code_level` is 1 (operators only), 2 (adds brackets, separators and indentation) or 3 (every symbol). |
 | A web page's headings and lists are read as one paragraph | Only Firefox puts the selection's HTML on the clipboard; Chromium-based browsers hand over plain text, so structure is recognised there only from Markdown markers. Copying with <kbd>Ctrl</kbd>+<kbd>C</kbd> and pressing <kbd>Super</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd> can help, since the copy clipboard often carries HTML. |
 | A formula is read as a jumble of words, or `doctor` says the Math helper is missing | `natural-tts apply` downloads the release's MathCAT helper (`~/.local/share/natural-tts/bin/natural-tts-mathcat`). Offline, or on a platform without a binary, build it: `natural-tts setup --helper-source /path/to/clone/helper/mathcat` (needs `cargo`). Until then formulas are read as words. |
-| A formula is spoken in a way you do not want | `reading.math_style = "simplespeak"` is shorter; see the known misreadings under [FAQ](#faq). Formulas with unbalanced delimiters are read as words. |
+| A formula is spoken in a way you do not want | `reading.math_style = "simplespeak"` is shorter; see the known misreadings under [FAQ](#faq). Formulas with unbalanced delimiters are read as words. "Divides" for a conditional bar, "cap p" or "raised to the … power" mean an older helper or package: run `natural-tts apply`. |
 | Upgrading left the old behaviour running | Since 0.1.2 `./install.sh` restarts the services. On an older install run `natural-tts apply` after `git pull && ./install.sh`. |
 
 Logs: `journalctl --user -u natural-tts-kokoro.service` and
@@ -464,23 +464,44 @@ shell transcripts, Python prompts, diffs and plain indented code. The code
 voice is the reading voice.
 
 **Does it read math?**
-Yes, since 0.4.0. LaTeX between `$…$`, `$$…$$`, `\(…\)`, `\[…\]` or in
-`equation`, `align` and similar environments, Unicode formulas on their
-own line (`E = mc²`, as PDFs paste them), MathML on web pages (Firefox
-hands it over; Wikipedia and MathJax pages carry the LaTeX too) are
-converted to MathML and spoken by [MathCAT](https://nsoiffer.github.io/MathCAT/),
-the engine behind NVDA's and Orca's math support, in ClearSpeak, the
-style students understood best in the published comparison.
-`reading.math_style = "simplespeak"` is terser. Nested fractions and
-roots get spoken closers ("end fraction", "end root"). Spanish, French,
+Yes, since 0.4.0, and since 0.6.0 the way a lecturer would say it. LaTeX
+between `$…$`, `$$…$$`, `\(…\)`, `\[…\]` or in `equation`, `align` and
+similar environments, Unicode formulas on their own line (`E = mc²`, as
+PDFs paste them), and MathML on web pages (Firefox hands it over) are
+converted to MathML and spoken by [MathCAT](https://nsoiffer.github.io/MathCAT/)
+in ClearSpeak, the style students understood best in the published
+comparison. Before MathCAT sees it, the formula is annotated with what it
+means, using the W3C MathML intent vocabulary: `P(A \mid B)` is
+"probability of A given B", `E[X]` "expected value of X",
+`\operatorname{Var}(X)` "variance of X", `X^T` "X transpose", `A^{-1}`
+"A inverse", `X \sim N(\mu,\sigma^2)` "X is distributed as N of mu, sigma
+squared", `\arg\max_\theta` "arg max over theta of", `\nabla \cdot E`
+"the divergence of E", `|\psi\rangle` "ket psi". Capitals are not
+announced, fractions are "a over b" with "end fraction" only when nested,
+`e^{-x^2}` is "e to the negative x squared", `\ln` is "natural log".
+`reading.math_style = "simplespeak"` is terser. Spanish, French,
 Portuguese and Chinese voices get MathCAT's rules for those languages;
 other voices get English. Short fragments inside prose such as `x²`,
-`5 ± 2` or `p < 0.05` keep the word rules. Known misreadings in this
-release: the set-builder bar in `\{x \mid x > 2\}` is "divides",
-`\mathbb{R}^n` is "the real numbers to the n-th power", the conditions
-of a `cases` block run into their values, and `\text{m/s}` inside a
-formula is spelled. Dollar amounts (`$5 and $10`) and shell variables
-are never taken for formulas.
+`5 ± 2` or `p < 0.05` keep the word rules. Known limits: the set-builder
+bar in `\{x \mid x > 2\}` is "divides", `\mathbb{R}^n` is "the real
+numbers to the n-th power", a two-sided Dirac bracket `\langle\phi|\psi
+\rangle` is read as its contents ("phi psi") because its meaning depends
+on context, and `KL(p \| q)` is "K L divergence from p to q". Dollar
+amounts (`$5 and $10`) and shell variables are never taken for formulas.
+
+**Does it read chemistry, biology and physics notation?**
+Common compounds are named in prose ("carbon dioxide", "sulfuric acid",
+"glucose") and spelled inside equations, which is how chemists read them.
+Gene variants follow the HGVS segments ("c dot one twenty-three, A to G",
+"p dot arg one seventy-five his"), karyotypes the ISCN ones ("forty-six,
+X Y, translocation between nine and twenty-two…"), genotypes say
+"knockout" and "heterozygous", restriction enzymes "Eco R one", cell
+lines "HEK two ninety-three", and dosing abbreviations their written
+replacements ("twice daily", "by mouth"). Units use NIST's spoken names
+("five kilopascals", "three hundred kelvins", "millimeters of mercury");
+`ħ` is "h bar". The conventions and their sources are listed in the
+changelog for 0.6.0; what no source settles is marked as a project
+decision there.
 
 **What is the MathCAT helper?**
 A 5 MB program, `natural-tts-mathcat`, built from the MathCAT Rust crate

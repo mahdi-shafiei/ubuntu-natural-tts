@@ -6,6 +6,50 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-22
+
+### Added
+
+- Formulas are read the way experts read them. Conditional probability
+  is "probability of theta given D" for `P`, `Pr` and `p` (the bar
+  `\mid` was read "divides"); expectation, variance, covariance,
+  correlation, standard deviation, transpose, inverse, norm and binomial
+  coefficients are named; `X \sim N(\mu, \sigma^2)` is "X is distributed
+  as", `\perp` "is independent of", `\arg\max_\theta` "arg max over theta
+  of", `\nabla \cdot` "the divergence of", `\nabla^2` "the Laplacian of",
+  `|\psi\rangle` "ket psi", `\langle A \rangle` "the expectation value
+  of A", a two-sided Dirac bracket its contents only. Capital letters are
+  no longer announced ("cap p"), every fraction is "a over b" ("end
+  fraction" only when nested), juxtaposed factors drop "times", compound
+  exponents are "e to the negative x squared", and `\ln` is "natural
+  log". Units inside formulas are read as words ("5 meters per second").
+  All of this is written into the MathML by `reading.intent` and spoken
+  by the unchanged MathCAT helper, which now takes any preference on its
+  protocol (`@Name=Value`).
+- Life-science notation: HGVS variants ("c dot one twenty-three, A to
+  G", "p dot arg one seventy-five his"), karyotypes ("forty-six, X Y,
+  translocation between nine and twenty-two, q thirty-four, q eleven"),
+  chromosome bands, genotypes ("knockout", "heterozygous"), restriction
+  enzymes ("Eco R one"), three-digit identifiers as said ("HEK two
+  ninety-three"), GWAS and SNP as words, flox alleles, Black 6 strains,
+  dosing abbreviations by their ISMP replacements ("twice daily", "by
+  mouth"), and h bar.
+- Chemistry: common compounds are named in prose (carbon dioxide,
+  sulfuric acid, glucose, ethanol, and thirty more from the UEfAP list);
+  equations keep the spelled register.
+- Units come from one table generated from MathCAT's definitions (NIST
+  spellings): 117 units, every SI prefix, pressure, astronomy and lab
+  units included; single letters other than the few written attached
+  need a space after the number.
+
+### Changed
+
+- The helper protocol is `@Name=Value`; the 0.4.0 `@Style Verbosity`
+  form is gone. Helper 0.6.0 is required (`setup` installs it).
+- Compound exponents, the natural log and the conditional bar are no
+  longer rewritten in the LaTeX; the MathML producer handles them.
+
+
 ## [0.5.0] - 2026-10-22
 
 ### Added
