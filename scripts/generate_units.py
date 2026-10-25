@@ -289,9 +289,9 @@ def main(crate: Path) -> None:
     functions = Path("src/natural_tts/reading/data/functions.py")
     functions.write_text(
         FUNCTIONS_HEADER.format(version=label)
-        + "FUNCTION_NAMES: frozenset[str] = frozenset(\n"
-        + _sequence(names, indent=1)
-        + ")\n"
+        + "FUNCTION_NAMES: frozenset[str] = frozenset(\n    [\n"
+        + _sequence(names, indent=2)
+        + "    ]\n)\n"
     )
     out = Path("src/natural_tts/reading/data/units.py")
     body = HEADER.format(version=label)
@@ -302,15 +302,15 @@ def main(crate: Path) -> None:
     )
     body += (
         "# symbols that accept an SI prefix (MathCAT's SIUnits)\n"
-        "PREFIXABLE: frozenset[str] = frozenset(\n"
-        + _sequence(sorted(prefixable), indent=1)
-        + ")\n\n"
+        "PREFIXABLE: frozenset[str] = frozenset(\n    [\n"
+        + _sequence(sorted(prefixable), indent=2)
+        + "    ]\n)\n\n"
     )
     body += (
         "# single-letter symbols allowed directly after a number\n"
-        "ATTACHABLE: frozenset[str] = frozenset(\n"
-        + _sequence(sorted(ATTACHABLE), indent=1)
-        + ")\n"
+        "ATTACHABLE: frozenset[str] = frozenset(\n    [\n"
+        + _sequence(sorted(ATTACHABLE), indent=2)
+        + "    ]\n)\n"
     )
     out.write_text(body)
     # One entry per line with trailing commas is the layout ruff keeps, so
