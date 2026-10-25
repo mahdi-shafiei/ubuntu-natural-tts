@@ -114,7 +114,7 @@ natural-tts. Ticks mark where the text was cut into speech.
 > (n = 3; p < 0.05), see Eq. 2: x = 1.
 
 
-https://github.com/user-attachments/assets/762b7a1e-b248-4958-b891-7e8d88c3ac2f
+https://github.com/user-attachments/assets/cbe46e5f-5507-4e6e-8c12-f20bfe87e99d
 
 
 
@@ -124,7 +124,7 @@ https://github.com/user-attachments/assets/762b7a1e-b248-4958-b891-7e8d88c3ac2f
 > brother, Mr. T. Ruiz, stayed behind.
 
 
-https://github.com/user-attachments/assets/a881764e-bdff-440f-ba0f-905951245e4a
+https://github.com/user-attachments/assets/6f42e586-0964-4a7d-b5d0-c2eb780149cc
 
 
 
@@ -135,7 +135,7 @@ https://github.com/user-attachments/assets/a881764e-bdff-440f-ba0f-905951245e4a
 > Fig. 3 of the paper, which we read in detail.
 
 
-https://github.com/user-attachments/assets/dc7255a2-0157-493d-bc87-6448028ade6f
+https://github.com/user-attachments/assets/01d57cec-7c07-45cc-a7f9-0868cca03348
 
 
 
@@ -144,7 +144,7 @@ https://github.com/user-attachments/assets/dc7255a2-0157-493d-bc87-6448028ade6f
 > larger samples (n = 120; p < 0.01).
 
 
-https://github.com/user-attachments/assets/ad068983-63b8-4bc1-95cf-c83c54765829
+https://github.com/user-attachments/assets/36a8fc12-8d39-4fdf-94c8-70a6ef4511da
 
 
 
@@ -183,7 +183,7 @@ Run the installer, then press a key:
 ```
 
 
-https://github.com/user-attachments/assets/2de2c24d-fd8a-4ae8-a2db-c52e3436aec5
+https://github.com/user-attachments/assets/7767e9fc-52ef-484e-bd8c-fb585b627fd2
 
 
 
@@ -198,7 +198,7 @@ def get_user_name(users, idx):
 ```
 
 
-https://github.com/user-attachments/assets/c9e97110-7799-4a7b-8255-37a5e58e8b08
+https://github.com/user-attachments/assets/c030d0d3-bdf4-4721-804d-b2ce09c846a8
 
 
 
@@ -211,7 +211,7 @@ https://github.com/user-attachments/assets/c9e97110-7799-4a7b-8255-37a5e58e8b08
 ```
 
 
-https://github.com/user-attachments/assets/c17aceff-6308-4b0b-a563-0c421ce83fa9
+https://github.com/user-attachments/assets/2c417cab-ff33-4fe0-826b-f2f9883ddae5
 
 
 
@@ -225,7 +225,7 @@ and fit $\hat{y} = \beta_0 + \beta_1 x$, which is significant at $p < 0.05$.
 ```
 
 
-https://github.com/user-attachments/assets/930ea783-b696-42e6-9114-e61c21a74811
+https://github.com/user-attachments/assets/93484759-6659-44a9-9955-99cbe3e7e473
 
 
 
@@ -240,7 +240,7 @@ follows from polar coordinates.
 ```
 
 
-https://github.com/user-attachments/assets/bd87f5e9-81f9-4417-999e-2207d3c6a95e
+https://github.com/user-attachments/assets/a65af19f-094f-41b1-a00f-5b945608b7bf
 
 
 
@@ -255,7 +255,7 @@ where m is the mass, and x² + y² = r² describes a circle.
 ```
 
 
-https://github.com/user-attachments/assets/a2adc5b4-a849-42d3-8f1d-7f6c00581a24
+https://github.com/user-attachments/assets/650203f3-c803-4cfb-baaf-7e62eb0e4cab
 
 
 
