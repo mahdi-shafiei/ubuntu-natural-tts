@@ -6,6 +6,16 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-10-25
+
+### Fixed
+
+- Installation broke on 2026-10-24 when `preshed` 3.0.14 was released: every
+  `spacy.load()` (used by Kokoro's phonemizer) raised "OverflowError: Python
+  int too large to convert to C ssize_t". The Kokoro extra pins
+  `preshed<3.0.14` until the upstream fix ships (spaCy issue 14058).
+
+
 ## [0.6.1] - 2026-10-22
 
 ### Fixed
