@@ -33,6 +33,28 @@ def _to_numpy(audio: Any) -> Samples:
     return audio.cpu().numpy() if hasattr(audio, "cpu") else audio
 
 
+# Edge silence, after Kokoro-FastAPI's AudioNormalizer (remsky/Kokoro-FastAPI
+# api/src/services/audio.py, b048d6d, 2026-10-23): every sample under
+# -45 dBFS at either end is silence, 50 ms is kept before the first and
+# after the last voiced sample, and all-silent audio is returned untouched.
+# hexgrad/kokoro #365 arrives at the same -45 dBFS gate; the model's own
+# repository does no trimming.
+SILENCE_FLOOR = 10 ** (-45 / 20)
+TRIM_MARGIN = KOKORO_SAMPLE_RATE * 50 // 1000
+
+
+def trim_silence(audio: Samples) -> Samples:
+    """Drop leading and trailing silence, keeping a 50 ms margin."""
+    import numpy
+
+    loud = numpy.flatnonzero(numpy.abs(audio) >= SILENCE_FLOOR)
+    if len(loud) == 0:
+        return audio
+    start = max(0, int(loud[0]) - TRIM_MARGIN)
+    end = min(len(audio), int(loud[-1]) + 1 + TRIM_MARGIN)
+    return audio[start:end]
+
+
 class KokoroSynthesizer:
     """``Synthesizer`` backed by a Kokoro ``KPipeline``."""
 
@@ -53,17 +75,23 @@ class KokoroSynthesizer:
     def synthesize(self, segments: Iterable[Segment]) -> Iterator[Samples]:
         """Yield audio per segment (Kokoro may split a segment further).
 
-        A segment's pause is emitted as silence at Kokoro's sample rate, and
-        its rate and voice override the configured speed and voice.
+        Kokoro pads every utterance with 0.3-0.4 s of leading and 0.4-0.5 s
+        of trailing silence (measured 2026-10-25); both are trimmed, as
+        kokoro-onnx and Kokoro-FastAPI do, so that a segment's
+        ``pause_before`` is the whole gap the listener hears. The first
+        segment of a request gets no silence at all. A segment's rate and
+        voice override the configured speed and voice.
         """
         import numpy
 
+        first = True
         for segment in segments:
-            if segment.pause_before > 0:
+            if segment.pause_before > 0 and not first:
                 yield numpy.zeros(
                     round(segment.pause_before * KOKORO_SAMPLE_RATE),
                     dtype="float32",
                 )
+            first = False
             results = self._pipeline(
                 segment.text,
                 voice=segment.voice or self._settings.voice,
@@ -72,7 +100,7 @@ class KokoroSynthesizer:
             )
             for result in results:
                 if result.audio is not None:
-                    yield _to_numpy(result.audio)
+                    yield trim_silence(_to_numpy(result.audio))
 
     def warm_up(self) -> None:
         """Run one tiny synthesis; the first call is much slower."""

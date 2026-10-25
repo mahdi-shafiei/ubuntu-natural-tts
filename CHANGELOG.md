@@ -6,6 +6,34 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-25
+
+### Changed
+
+- A segment's pause is now the whole gap the listener hears. The Kokoro
+  backend trims the model's own 0.3-0.5 s of leading and trailing silence
+  the way Kokoro-FastAPI does (samples under -45 dBFS, 50 ms kept), nothing
+  precedes the first segment of a request, and the gap is keyed on how the
+  previous segment ended, as kokoro-onnx and Kokoro-FastAPI key theirs:
+  0.2 s after a clause, 0.4 s after a sentence, 0.8 s before a paragraph,
+  heading, quote, code or formula, 0.4 s before a list item, 0.75 s before a
+  table row. A formula or line that continues the sentence around it gets
+  the clause gap. Headings and list items end with a full stop so the voice
+  closes them.
+- Formula breaks follow MathCAT's own rendering for voices without SSML: a
+  comma for a break of up to a quarter second, a semicolon for a longer one,
+  nothing for one under 50 ms, never a full stop inside a formula.
+- Adjacent probability factors are read with "times" (Bayes' rule:
+  "probability of B given A, times probability of A over probability of B").
+- Two-letter runs in plain-Unicode formulas are juxtaposed variables unless
+  they name a function: "E = mc²" is "E is equal to m c squared", "ln x"
+  keeps its logarithm. The function names come from MathCAT's definitions
+  and UnicodeMathML's parser.
+- Code: multi-character operators survive Pygments' lexers (`>=` is
+  "greater than or equal to" in Python too), and a hyphen that opens a word
+  is "dash" in every language, as in NVDA's symbol table ("git add dash A",
+  "dash dash all"); between operands it stays "minus".
+
 ## [0.6.2] - 2026-10-25
 
 ### Fixed

@@ -5,6 +5,8 @@ from pathlib import Path
 import pytest
 
 from natural_tts.reading.mathcat import (
+    COMMA_BREAK,
+    MIN_BREAK,
     MathCat,
     MathCatUnavailable,
     parse_ssml,
@@ -111,18 +113,29 @@ class TestClient:
 
 
 class TestSentence:
-    def test_breaks_become_punctuation_by_length(self):
+    def test_breaks_render_as_mathcat_does_without_ssml(self):
+        # MathCAT's TTS=None mapping: <= 50 ms nothing, <= 250 ms a comma,
+        # longer a semicolon, never a full stop. Measured helper output for
+        # the Gaussian integral: 0.2 s after the lower limit, 0.384 s before
+        # the integrand, 0.512 s before "is equal to".
         pieces = [
-            (0.0, "the integral from 0"),
-            (0.128, "to 1 of"),
-            (0.256, "f of x d x"),
-            (0.4, "is equal to"),
-            (0.8, "one"),
+            (0.0, "the integral from negative infinity"),
+            (0.2, "to infinity of"),
+            (0.384, "e to the negative x squared"),
+            (0.128, "d x"),
+            (0.512, "is equal to"),
+            (0.04, "the square root of pi"),
         ]
-        assert (
-            sentence(pieces)
-            == "the integral from 0 to 1 of, f of x d x. is equal to. one"
+        assert sentence(pieces) == (
+            "the integral from negative infinity, to infinity of; "
+            "e to the negative x squared, d x; "
+            "is equal to the square root of pi"
         )
+
+    def test_thresholds_are_inclusive(self):
+        assert sentence([(0.0, "a"), (MIN_BREAK, "b")]) == "a b"
+        assert sentence([(0.0, "a"), (COMMA_BREAK, "b")]) == "a, b"
+        assert sentence([(0.0, "a"), (COMMA_BREAK + 0.001, "b")]) == "a; b"
 
     def test_single_piece_and_empty(self):
         assert sentence([(0.0, "x")]) == "x"

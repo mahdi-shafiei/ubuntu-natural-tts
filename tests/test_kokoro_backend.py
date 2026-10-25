@@ -56,12 +56,40 @@ class TestKokoroSynthesizer:
         assert kwargs["voice"] == "am_puck"
         assert kwargs["speed"] == pytest.approx(0.9)
 
-    def test_pause_before_is_silence_at_the_sample_rate(self):
+    def test_pause_before_is_the_whole_gap_between_segments(self):
+        # 0.1 s of near-silence on both edges, then voice, then silence
+        # again: the synthesizer trims the edges so the requested pause is
+        # the entire gap the listener hears.
+        voiced = np.full(2_400, 0.2, dtype=np.float32)
+        edge = np.full(2_400, 0.001, dtype=np.float32)
+        pipe = FakePipeline([FakeResult(np.concatenate([edge, voiced, edge]))])
+        synth = KokoroSynthesizer(KokoroSettings(), pipe)
+        out = list(
+            synth.synthesize([Segment("a"), Segment("b", pause_before=0.5)])
+        )
+        # 50 ms margins (1200 samples) stay on both sides of the voice.
+        assert [len(o) for o in out] == [4_800, 12_000, 4_800]
+        assert not out[1].any() and out[0][1_200:-1_200].all()
+
+    def test_no_silence_before_the_first_segment(self):
         pipe = FakePipeline([FakeResult(FakeTensor([0.1]))])
         synth = KokoroSynthesizer(KokoroSettings(), pipe)
         out = list(synth.synthesize([Segment("x", pause_before=0.5)]))
-        assert len(out) == 2
-        assert len(out[0]) == 12_000 and not out[0].any()
+        assert len(out) == 1 and out[0].tolist() == pytest.approx([0.1])
+
+    def test_trimming_keeps_a_short_margin_and_all_silent_audio(self):
+        quiet = np.full(4_800, 0.001, dtype=np.float32)
+        loud = np.full(240, 0.5, dtype=np.float32)
+        pipe = FakePipeline([FakeResult(np.concatenate([quiet, loud, quiet]))])
+        synth = KokoroSynthesizer(KokoroSettings(), pipe)
+        (out,) = synth.synthesize([Segment("x")])
+        # 50 ms (1200 samples) kept on each side of the 10 ms of voice.
+        assert len(out) == 1_200 + 240 + 1_200
+        pipe = FakePipeline([FakeResult(np.zeros(1_000, dtype=np.float32))])
+        (out,) = KokoroSynthesizer(KokoroSettings(), pipe).synthesize(
+            [Segment("x")]
+        )
+        assert len(out) == 1_000
 
     def test_yields_numpy_audio_and_skips_empty_results(self):
         pipe = FakePipeline(

@@ -66,7 +66,7 @@ def test_golden(mathcat, source, language, style, expected):
         assert pieces is None
     else:
         assert pieces is not None
-        assert sentence(pieces, inline=True) == expected
+        assert sentence(pieces) == expected
 
 
 def test_rows_cover_both_styles_and_both_sources():

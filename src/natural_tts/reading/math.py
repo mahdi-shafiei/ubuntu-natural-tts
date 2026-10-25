@@ -13,6 +13,8 @@ import re
 import unicodedata
 from dataclasses import dataclass
 
+from natural_tts.reading.data.functions import FUNCTION_NAMES
+
 MAX_SPAN_CHARS = 10_000
 MAX_BRACE_DEPTH = 50
 _ENVIRONMENTS = (
@@ -208,8 +210,18 @@ def unicode_math_to_mathml(text: str) -> str | None:
             continue
         if kind == "num":
             element = f"<mn>{value}</mn>"
-        elif kind in {"id", "word"}:
+        elif kind == "id" or value in FUNCTION_NAMES or len(value) > 2:
+            # UnicodeMathML keeps a letter run whole only when it names a
+            # function; MathCAT's canonicaliser merges letters into a word
+            # from three characters on. Both cut-offs together: a known
+            # function or three or more letters is one identifier.
             element = f"<mi>{value}</mi>"
+        elif kind == "word":
+            # Two letters are juxtaposed variables ("mc" in E = mc²), one
+            # identifier each, so a script attaches to the last letter only
+            # (UnicodeMathML README: the base of the superscript is c).
+            parts.append(f"<mi>{value[0]}</mi>")
+            element = f"<mi>{value[1]}</mi>"
         elif kind == "op":
             element = f"<mo>{_escape(value)}</mo>"
         elif kind == "sup":

@@ -132,7 +132,10 @@ class TestUnicodeMath:
         ("text", "expected_tags"),
         [
             ("x² + y² = r²", ["<msup>", "<mo>+</mo>", "<mo>=</mo>"]),
-            ("E = mc²", ["<msup>", "<mi>E</mi>"]),
+            (
+                "E = mc²",
+                ["<msup>", "<mi>E</mi>", "<mi>m</mi><msup><mi>c</mi>"],
+            ),
             ("α ≤ β", ["<mi>α</mi>", "<mo>≤</mo>"]),
             ("aₙ = a₁ + (n−1)d", ["<msub>", "<mo>−</mo>"]),
         ],
@@ -144,6 +147,20 @@ class TestUnicodeMath:
         assert mathml is not None
         for tag in expected_tags:
             assert tag in mathml, (tag, mathml)
+
+    def test_two_letters_are_variables_unless_a_function_name(self):
+        assert "<mi>a</mi><mi>b</mi>" in str(
+            unicode_math_to_mathml("y = ab + c²")
+        )
+        mathml = str(unicode_math_to_mathml("sin² θ + cos² θ = 1"))
+        assert "<mi>sin</mi>" in mathml and "<mi>cos</mi>" in mathml
+        assert "<mi>s</mi>" not in mathml
+        assert "<mi>ln</mi>" in str(unicode_math_to_mathml("y = ln x + 2²"))
+
+    def test_three_letters_or_more_stay_one_identifier(self):
+        # MathCAT merges letter runs into a word from three characters on.
+        assert "<mi>abc</mi>" in str(unicode_math_to_mathml("abc² + 1"))
+        assert "<mi>arcsinh</mi>" in str(unicode_math_to_mathml("arcsinh x²"))
 
     @pytest.mark.parametrize(
         "text", ["hello world", "n = 3", "see Fig. 3", "x", "100%"]

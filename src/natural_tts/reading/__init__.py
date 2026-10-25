@@ -40,18 +40,43 @@ from natural_tts.segments import Kind, Segment
 from natural_tts.text import chunk_text
 
 _ENGLISH_LANG_CODES = frozenset("ab")
-# Seconds of silence before a segment of each kind, and its speed factor.
+# Pauses are the whole gap between two segments (the engine trims its own
+# edge silence, as kokoro-onnx and Kokoro-FastAPI do). The gap is keyed on
+# how the previous segment ended, the mechanism both of those pipelines use
+# (kokoro-onnx: 0.10 s after ",;:", 0.25 s after ".!?"; Kokoro-FastAPI:
+# 0.41 s scaled 0.8-1.0 by the final mark). The ladder clause < sentence <
+# paragraph at about 1:2:4 follows the read-speech corpora (Doukhan 2012:
+# medians 386 / 720 / 1127 ms; Farrús 2016: paragraph 1.6-2.8x sentence)
+# and the finding that listeners notice the ordering, not the exact values
+# (Owoicho 2024). No reader surveyed holds a heading constant; a heading is
+# treated as a paragraph on both sides. Table rows take the 750 ms row-end
+# pause measured by Spiliotopoulos et al. (research/reports/Reading tables
+# aloud.md). The research is in research/reports/Segment pauses and
+# formula breaks.md.
+CLAUSE_PAUSE = 0.2
+SENTENCE_PAUSE = 0.4
+PARAGRAPH_PAUSE = 0.8
 PAUSES: dict[Kind, float] = {
-    Kind.HEADING: 0.6,
-    Kind.LIST_ITEM: 0.25,
-    Kind.QUOTE: 0.25,
-    Kind.CODE: 0.25,
-    Kind.MATH: 0.25,
-    Kind.TABLE: 0.25,
+    Kind.PROSE: PARAGRAPH_PAUSE,
+    Kind.HEADING: PARAGRAPH_PAUSE,
+    Kind.LIST_ITEM: SENTENCE_PAUSE,
+    Kind.QUOTE: PARAGRAPH_PAUSE,
+    Kind.CODE: PARAGRAPH_PAUSE,
+    Kind.MATH: PARAGRAPH_PAUSE,
+    Kind.TABLE: PARAGRAPH_PAUSE,
 }
-RATES: dict[Kind, float] = {Kind.HEADING: 0.9, Kind.CODE: 0.9}
-# A table row ends with the longest pause of the three (header < value < row).
 TABLE_ROW_PAUSE = 0.75
+RATES: dict[Kind, float] = {Kind.HEADING: 0.9, Kind.CODE: 0.9}
+# Sentence-ending marks: NVDA's say-all regex ([.!?]) plus the ":" and
+# ";" that the chunker and Kokoro-FastAPI's join_lines treat as ends.
+_SENTENCE_END = (".", "!", "?", ";", ":")
+# Kinds that can continue each other's sentence across a block boundary
+# ("The Gaussian integral", a display formula, "follows from"). No reader
+# surveyed detects this; every one splits at the block (research report).
+_CONTINUABLE = frozenset({Kind.PROSE, Kind.MATH})
+# Blocks that are complete units: a final full stop closes the voice's
+# contour (Kokoro-FastAPI join_lines appends "." to unpunctuated lines).
+_CLOSED = frozenset({Kind.HEADING, Kind.LIST_ITEM})
 _INLINE_CODE = re.compile(r"`([^`\n]{1,500}+)`")
 
 Chunker = Callable[[str, str | None], Iterator[Segment]]
@@ -88,17 +113,45 @@ class _Reader:
         self.level = reading.code_level
         self.lexicon = lexicon_for(settings) if self.english else None
         self.formulas = formulas
+        self._last: Segment | None = None
 
     def segments(self, block: Block) -> Iterator[Segment]:
         """Turn one block into segments."""
         if block.kind is Kind.CODE:
-            yield from self._code(block)
+            produced = self._code(block)
         elif block.kind is Kind.MATH:
-            yield from self._math(block)
+            produced = self._math(block)
         elif block.kind is Kind.TABLE:
-            yield from self._table(block)
+            produced = self._table(block)
         else:
-            yield from self._prose(block)
+            produced = self._prose(block)
+        for segment in produced:
+            self._last = segment
+            yield segment
+
+    def _block_pause(self, kind: Kind, text: str) -> float:
+        """The gap before a block's first segment.
+
+        A prose or math block that continues the previous segment's
+        sentence gets a clause pause: the previous prose had no
+        sentence-ending punctuation, or this prose starts in lower case
+        after a formula ("The Gaussian integral", the formula, "follows").
+        """
+        last = self._last
+        if last is None or kind not in _CONTINUABLE:
+            return PAUSES[kind]
+        if last.kind is Kind.PROSE and not last.text.rstrip().endswith(
+            _SENTENCE_END
+        ):
+            return CLAUSE_PAUSE
+        if last.kind is Kind.MATH and text[:1].islower():
+            return CLAUSE_PAUSE
+        return PAUSES[kind]
+
+    def _segment(
+        self, text: str, kind: Kind, pause: float, rate: float = 1.0
+    ) -> Segment:
+        return Segment(text, kind=kind, pause_before=pause, rate=rate)
 
     def _words(self, text: str) -> str:
         if self.lexicon is not None:
@@ -131,7 +184,7 @@ class _Reader:
         for span in spans:
             out.append(text[last : span.start])
             pieces = self._math_pieces(span.latex, LATEX)
-            words = sentence(pieces, inline=True)
+            words = sentence(pieces)
             if words:
                 out.append(protect(words))
             last = span.end
@@ -143,7 +196,9 @@ class _Reader:
         # punctuation (see ``mathcat.sentence``).
         words = sentence(self._math_pieces(block.text, block.language))
         if words:
-            yield Segment(words, kind=Kind.MATH, pause_before=PAUSES[Kind.MATH])
+            yield self._segment(
+                words, Kind.MATH, self._block_pause(Kind.MATH, words)
+            )
 
     def _prose(self, block: Block) -> Iterator[Segment]:
         # Inline code first: its words carry no "$", so a formula inside a
@@ -157,17 +212,22 @@ class _Reader:
                 else str(block.ordered_index)
             )
             text = f"{number}, {text}"
-        pause = PAUSES.get(block.kind, 0.0)
-        for chunk in chunk_text(text, FIRST_CHUNK_MIN_CHARS, CHUNK_MAX_CHARS):
+        pause = self._block_pause(block.kind, text)
+        chunks = chunk_text(text, FIRST_CHUNK_MIN_CHARS, CHUNK_MAX_CHARS)
+        for index, chunk in enumerate(chunks):
             words = self._words(chunk)
-            if words:
-                yield Segment(
-                    words,
-                    kind=block.kind,
-                    pause_before=pause,
-                    rate=RATES.get(block.kind, 1.0),
-                )
-                pause = 0.0
+            if not words:
+                continue
+            if (
+                block.kind in _CLOSED
+                and index == len(chunks) - 1
+                and not words.endswith(_SENTENCE_END)
+            ):
+                words += "."
+            yield self._segment(
+                words, block.kind, pause, RATES.get(block.kind, 1.0)
+            )
+            pause = _chunk_pause(words)
 
     def _code(self, block: Block) -> Iterator[Segment]:
         lines = read_code(block.text, language=block.language, level=self.level)
@@ -178,20 +238,14 @@ class _Reader:
                 group
                 and sum(len(g) + 2 for g in group) + len(line) > CHUNK_MAX_CHARS
             ):
-                yield Segment(
-                    ". ".join(group),
-                    kind=Kind.CODE,
-                    pause_before=pause,
-                    rate=RATES[Kind.CODE],
+                yield self._segment(
+                    ". ".join(group), Kind.CODE, pause, RATES[Kind.CODE]
                 )
-                group, pause = [], 0.0
+                group, pause = [], SENTENCE_PAUSE
             group.append(line)
         if group:
-            yield Segment(
-                ". ".join(group),
-                kind=Kind.CODE,
-                pause_before=pause,
-                rate=RATES[Kind.CODE],
+            yield self._segment(
+                ". ".join(group), Kind.CODE, pause, RATES[Kind.CODE]
             )
 
     def _table(self, block: Block) -> Iterator[Segment]:
@@ -200,23 +254,26 @@ class _Reader:
         # and an explicit end; rows get the long pause.
         pause = PAUSES[Kind.TABLE]
         if block.caption:
-            yield Segment(self._words(block.caption), Kind.TABLE, pause)
+            yield self._segment(self._words(block.caption), Kind.TABLE, pause)
+            pause = SENTENCE_PAUSE
         width = max(len(block.columns), *(len(r) for r in block.rows), 0)
         shape = "Table with {} and {}.".format(
             _count(len(block.rows), "row"), _count(width, "column")
         )
-        yield Segment(shape, kind=Kind.TABLE, pause_before=pause)
+        yield self._segment(shape, Kind.TABLE, pause)
         columns = block.columns + ("",) * (width - len(block.columns))
         if block.columns:
             names = ", ".join(c for c in block.columns if c)
-            yield Segment(self._words(f"Columns: {names}."), Kind.TABLE, pause)
-        for row in block.rows:
-            yield Segment(
-                self._words(_row_sentences(columns, row, block.row_headers)),
-                kind=Kind.TABLE,
-                pause_before=TABLE_ROW_PAUSE,
+            yield self._segment(
+                self._words(f"Columns: {names}."), Kind.TABLE, SENTENCE_PAUSE
             )
-        yield Segment("End of table.", Kind.TABLE, TABLE_ROW_PAUSE)
+        for row in block.rows:
+            yield self._segment(
+                self._words(_row_sentences(columns, row, block.row_headers)),
+                Kind.TABLE,
+                TABLE_ROW_PAUSE,
+            )
+        yield self._segment("End of table.", Kind.TABLE, TABLE_ROW_PAUSE)
 
 
 def _row_sentences(
@@ -232,6 +289,13 @@ def _row_sentences(
         value = cell or "blank"
         parts.append(f"{name}: {value}." if name else f"{value}.")
     return " ".join(parts)
+
+
+def _chunk_pause(previous: str) -> float:
+    """The gap before the next chunk of the same block."""
+    if previous.rstrip().endswith(_SENTENCE_END):
+        return SENTENCE_PAUSE
+    return CLAUSE_PAUSE
 
 
 def _count(n: int, noun: str) -> str:

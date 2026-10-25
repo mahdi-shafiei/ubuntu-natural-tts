@@ -53,6 +53,24 @@ class TestProbability:
         assert "intent" not in out and ("∣" in out or "&#x2223;" in out)
 
 
+class TestProducts:
+    def test_adjacent_probabilities_get_a_spoken_times(self):
+        out = produce(r"P(D \mid \theta)\, P(\theta)")
+        assert out.count("<mo>×</mo>") == 1
+        assert (
+            out.index('intent="conditional-probability')
+            < out.index("<mo>×</mo>")
+            < out.index('intent="probability($a)"')
+        )
+
+    def test_other_juxtapositions_are_left_to_the_helper(self):
+        assert "×" not in produce(r"2x + P(A) y")
+
+    def test_idempotent(self):
+        once = produce(r"P(A) P(B)")
+        assert annotate(once) == once
+
+
 class TestExpectation:
     def test_expected_value(self):
         out = produce(r"E[X] + \mathbb{E}[Y]")

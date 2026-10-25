@@ -715,12 +715,50 @@ def _new_row(nodes: list[ET.Element]) -> ET.Element:
     return row
 
 
+# Intents whose juxtaposition is a product that is read aloud: "P of D given
+# theta, times P of theta" (Bayes' rule in every handbook reading). With
+# ClearSpeak_ImpliedTimes=None, MathCAT says nothing between them.
+_FACTOR_INTENTS = frozenset(
+    {
+        "probability",
+        "conditional-probability",
+        "expected-value",
+        "variance",
+        "covariance",
+        "standard-deviation",
+    }
+)
+
+
+def _intent_name(element: ET.Element) -> str:
+    return (element.get("intent") or "").split("(", 1)[0]
+
+
+def _products(parent: ET.Element, children: list[ET.Element]) -> bool:
+    # Two probability-family intents separated by nothing but spacing get
+    # an explicit times sign, which MathCAT speaks (U+2062 invisible times
+    # stays silent).
+    for index, left in enumerate(children):
+        if _intent_name(left) not in _FACTOR_INTENTS:
+            continue
+        after = index + 1
+        while after < len(children) and _is(children[after], "mspace"):
+            after += 1
+        if after < len(children) and _intent_name(children[after]) in (
+            _FACTOR_INTENTS
+        ):
+            _replace(parent, after, after, [_new("mo", "×")])
+            return True
+    return False
+
+
 _PASSES: tuple[Pass, ...] = (
     _probability,
     _expectation,
     _postfix,
     _exponents,
     _function_calls,
+    _products,
     _norm,
     _relations,
     _operators,

@@ -96,7 +96,10 @@ class TestOperatorsAndNumbers:
         ("code", "spoken"),
         [
             ("a == b and c != d", "a equals equals b and c not equals d"),
-            ("a <= b >= c", "a less or equal b greater or equal c"),
+            (
+                "a <= b >= c",
+                "a less than or equal to b greater than or equal to c",
+            ),
             ("x += 1; y -= 2", "x plus equals one y minus equals two"),
             ("f = lambda v: v ** 2", "f equals lambda v v star star two"),
             ("p->next = q", "p arrow next equals q"),
@@ -116,6 +119,15 @@ class TestOperatorsAndNumbers:
     def test_level_one_operator_words(self, code, spoken):
         assert read_code(code + "\n", language=None, level=1) == [spoken]
 
+    def test_multi_character_operators_survive_the_lexer(self):
+        # Pygments' Python lexer yields ">" and "=" as two operator tokens.
+        assert read_code("if i >= len(u):\n", language="python", level=1) == [
+            "if i greater than or equal to length u"
+        ]
+        assert read_code("a == b\n", language="python", level=1) == [
+            "a equals equals b"
+        ]
+
     def test_bang_is_spoken_only_at_level_three(self):
         assert read_code("!c\n", language=None, level=3) == ["bang c"]
 
@@ -125,11 +137,24 @@ class TestLanguages:
         code = "# list files\nls -la | grep foo\n"
         assert read_code(code, language="sh", level=1) == [
             "comment list files",
-            "ls minus la grep foo",
+            "ls dash la grep foo",
         ]
         assert read_code(code, language="sh", level=2)[1] == (
-            "ls minus la bar grep foo"
+            "ls dash la bar grep foo"
         )
+
+    def test_a_hyphen_opening_a_word_is_a_dash(self):
+        # NVDA's rows: "-" is "dash", "minus" only before a digit.
+        assert read_code("git add -A --all\n", language=None, level=1) == [
+            "git add dash A dash dash all"
+        ]
+        assert read_code("tar -xzf a.tgz\n", language="bash", level=1) == [
+            "tar dash xzf a dot tgz"
+        ]
+        assert read_code("a -b\n", language="python", level=1) == ["a dash b"]
+        assert read_code("a - b; a-b; -1\n", language=None, level=1) == [
+            "a minus b a minus b minus one"
+        ]
 
     def test_unknown_language_still_reads(self):
         assert read_code("x = 1\n", language="nosuchlang", level=1) == [

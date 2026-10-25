@@ -126,13 +126,13 @@ class TestStructure:
         ]
         assert Kind.CODE in kinds and Kind.TABLE in kinds
         heading = out[0]
-        assert heading.text == "Results"
-        assert heading.pause_before == 0.6 and heading.rate == 0.9
+        assert heading.text == "Results."
+        assert heading.pause_before == 0.8 and heading.rate == 0.9
 
     def test_prose_words_are_normalised_but_inline_code_is_not(self, tmp_path):
         out = list(prepare(HTML, make_settings(tmp_path), HTML_FORMAT))
         prose = out[1].text
-        assert "git add minus A" in prose
+        assert "git add dash A" in prose
         assert "thirty-seven degrees Celsius" in prose
         assert "Figure three" in prose
         assert "`" not in prose and "\ue000" not in prose
@@ -141,12 +141,12 @@ class TestStructure:
         out = list(prepare(HTML, make_settings(tmp_path), HTML_FORMAT))
         items = [s for s in out if s.kind is Kind.LIST_ITEM]
         assert [s.text for s in items] == [
-            "first item",
-            "second item",
-            "one, alpha",
-            "two, beta",
+            "first item.",
+            "second item.",
+            "one, alpha.",
+            "two, beta.",
         ]
-        assert all(s.pause_before == 0.25 for s in items)
+        assert all(s.pause_before == 0.4 for s in items)
 
     def test_code_is_read_at_the_configured_level(self, tmp_path):
         settings = make_settings(tmp_path)
@@ -174,7 +174,7 @@ class TestStructure:
             "Name: a. Size: five millimeters.",
             "End of table.",
         ]
-        assert [s.pause_before for s in table] == [0.25, 0.25, 0.75, 0.75]
+        assert [s.pause_before for s in table] == [0.8, 0.4, 0.75, 0.75]
 
     def test_table_caption_row_headings_and_blank_cells(self, tmp_path):
         html = (
@@ -202,7 +202,7 @@ class TestStructure:
         text = "# Title\n\nSome prose.\n\n```sh\nls -la\n```\n"
         out = list(prepare(text, make_settings(tmp_path)))
         assert [s.kind for s in out] == [Kind.HEADING, Kind.PROSE, Kind.CODE]
-        assert out[2].text == "ls minus la"
+        assert out[2].text == "ls dash la"
 
     def test_disabled_reads_html_as_plain_chunks(self, tmp_path):
         settings = replace(
@@ -264,20 +264,16 @@ def fake_helper(tmp_path):
 
 
 class TestMath:
-    def test_display_math_is_one_segment_with_breaks_as_punctuation(
-        self, tmp_path, fake_helper
-    ):
-        # The fake helper emits a 128 ms break, then a 400 ms break: short
-        # breaks vanish, medium ones become commas, long ones full stops,
-        # so the formula is one engine call (each call adds its own ~0.3 s
-        # of leading silence, which made seven pieces sound choppy).
+    def test_display_math_is_one_segment(self, tmp_path, fake_helper):
+        # The fake helper emits a 128 ms break (a comma), then a 400 ms
+        # break (a semicolon); the formula is one engine call.
         text = "Before.\n\n$$\\frac{a}{b}$$\n\nAfter."
         out = list(prepare(text, make_settings(tmp_path)))
         math = [s for s in out if s.kind is Kind.MATH]
         assert [s.text for s in math] == [
-            "[ClearSpeak Medium] cap A. over b. end"
+            "[ClearSpeak Medium] cap A. over, b; end"
         ]
-        assert [s.pause_before for s in math] == [0.25]
+        assert [s.pause_before for s in math] == [0.8]
 
     def test_inline_math_is_spoken_inside_the_sentence(
         self, tmp_path, fake_helper
@@ -285,7 +281,7 @@ class TestMath:
         (out,) = texts(
             prepare("where $x^2 + y^2 = r^2$ holds.", make_settings(tmp_path))
         )
-        assert out == "where [ClearSpeak Medium] cap A. over b, end holds."
+        assert out == "where [ClearSpeak Medium] cap A. over, b; end holds."
 
     def test_simplespeak_and_verbose_for_deep_nesting(
         self, tmp_path, fake_helper
@@ -398,3 +394,48 @@ class TestMath:
         joined = " ".join(out)
         assert joined.count("[ClearSpeak Medium]") == 200
         assert "$" not in joined
+
+
+class TestPauses:
+    def test_a_formula_continuing_the_sentence_gets_clause_pauses(
+        self, tmp_path, fake_helper
+    ):
+        text = "The Gaussian integral\n\n$$\\frac{a}{b}$$\n\nfollows from it."
+        out = list(prepare(text, make_settings(tmp_path)))
+        assert [s.kind for s in out] == [Kind.PROSE, Kind.MATH, Kind.PROSE]
+        assert [s.pause_before for s in out] == [0.8, 0.2, 0.2]
+
+    def test_a_formula_after_a_full_stop_gets_the_block_pause(
+        self, tmp_path, fake_helper
+    ):
+        text = "Before.\n\n$$\\frac{a}{b}$$\n\nAfter."
+        out = list(prepare(text, make_settings(tmp_path)))
+        assert [s.pause_before for s in out] == [0.8, 0.8, 0.8]
+
+    def test_chunks_of_one_paragraph_pause_by_their_boundary(self, tmp_path):
+        # The opening sentence is over 120 characters, so the first chunk
+        # ends at its comma; the next sentence does not fit beside the rest.
+        clause = (
+            "the first clause of the opening sentence runs on for quite a "
+            "while and then a little more, "
+        )
+        first = clause + "and the rest of the opening sentence is here. "
+        second = "Another sentence follows it " * 9 + "and ends."
+        out = list(prepare(first + second, make_settings(tmp_path)))
+        assert [s.text.endswith(",") for s in out] == [True, False, False]
+        assert [s.pause_before for s in out] == [0.8, 0.2, 0.4]
+
+    def test_code_groups_pause_as_sentences(self, tmp_path):
+        text = "```\n" + "\n".join(["x = " + "a" * 60] * 8) + "\n```\n"
+        out = list(prepare(text, make_settings(tmp_path)))
+        assert len(out) > 1 and all(s.kind is Kind.CODE for s in out)
+        assert [s.pause_before for s in out][:2] == [0.8, 0.4]
+
+    def test_headings_and_list_items_end_with_a_full_stop(self, tmp_path):
+        text = "## Quick start\n\n- first item\n- second item?\n"
+        out = list(prepare(text, make_settings(tmp_path)))
+        assert [s.text for s in out] == [
+            "Quick start.",
+            "first item.",
+            "second item?",
+        ]

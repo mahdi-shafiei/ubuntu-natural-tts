@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import functools
 import re
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import Any
 
 from natural_tts.config import CODE_LEVELS
@@ -27,8 +27,12 @@ SYMBOLS: tuple[tuple[str, str, int], ...] = (
     ("!==", "not triple equals", 1),
     ("==", "equals equals", 1),
     ("!=", "not equals", 1),
-    ("<=", "less or equal", 1),
-    (">=", "greater or equal", 1),
+    # No maintained reader names two-character operators (NVDA, Speech
+    # Dispatcher and eSpeak speak them character by character); these rows
+    # are the project's, worded after NVDA's names for the Unicode glyphs
+    # ("greater-than or equal to", "not equal to", "right arrow").
+    ("<=", "less than or equal to", 1),
+    (">=", "greater than or equal to", 1),
     ("->", "arrow", 1),
     ("=>", "fat arrow", 1),
     ("+=", "plus equals", 1),
@@ -75,6 +79,13 @@ SYMBOLS: tuple[tuple[str, str, int], ...] = (
 )
 _SYMBOL_WORDS = {symbol: (words, level) for symbol, words, level in SYMBOLS}
 _SYMBOL_RE = "|".join(re.escape(s) for s, _, _ in SYMBOLS)
+# A hyphen opening a word is "dash" and a hyphen before a digit "minus",
+# NVDA's two symbols.dic rows ("-" dash; "negative number" minus), which
+# Speech Dispatcher imports verbatim, so "-A" and "--all" are "dash A" and
+# "dash dash all" in every language. Between operands the table below says
+# "minus" ("x - y", "x-y"); no maintained reader does that, it is this
+# project's addition for code.
+_FLAG = re.compile(r"(?<!\S)(-+)(?=[A-Za-z_])")
 _TOKEN = re.compile(
     r"(?P<ws>\s+)"
     r"|(?P<string>\"[^\"\n]*\"|'[^'\n]*')"
@@ -222,6 +233,7 @@ def _lines(
 ) -> Iterator[tuple[str, list[str]]]:
     lexer = _lexer(language) if language else None
     for raw in text.split("\n"):
+        raw = _FLAG.sub(lambda m: " dash" * len(m.group(1)) + " ", raw)
         yield raw, _speak_line(raw, lexer, level)
 
 
@@ -231,7 +243,9 @@ def _speak_line(raw: str, lexer: Any, level: int) -> list[str]:
         for kind, value in _tokenize(raw):
             words.extend(_speak(kind, value, level))
         return words
-    for token_type, value in _merge_strings(lexer.get_tokens(raw)):
+    for token_type, value in _merge_operators(
+        _merge_strings(lexer.get_tokens(raw))
+    ):
         name = str(token_type)
         if "Comment" in name:
             words.extend(_speak("comment", value, level))
@@ -254,6 +268,26 @@ def _merge_strings(tokens: Any) -> Iterator[tuple[Any, str]]:
         if value == "\n":
             continue
         if "String" in str(token_type):
+            pending.append(value)
+            pending_type = token_type
+            continue
+        if pending:
+            yield pending_type, "".join(pending)
+            pending = []
+        yield token_type, value
+    if pending:
+        yield pending_type, "".join(pending)
+
+
+def _merge_operators(
+    tokens: Iterable[tuple[Any, str]],
+) -> Iterator[tuple[Any, str]]:
+    # Pygments' Python lexer yields ">=" as ">" then "="; joined back, the
+    # symbol table's longest-first match reads it as one operator.
+    pending: list[str] = []
+    pending_type: Any = None
+    for token_type, value in tokens:
+        if "Operator" in str(token_type) and not value.isspace():
             pending.append(value)
             pending_type = token_type
             continue
