@@ -1,0 +1,30 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 5 * * 1"  # weekly: a new advisory fails here before it fails a pull request
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Audit the locked dependencies
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+      # Every extra the lock resolves, each audited by a pinned pip-audit against both its PyPI and
+      # OSV services with a fresh advisory cache. Ignored advisories and their reasons would live in
+      # [tool.substrax.audit-lock.ignore] in pyproject.toml; the action also fails on an ignore that
+      # no longer matches anything.
+      - name: Audit the locked dependencies
+        uses: avitai/substrax/.github/actions/audit-lock@e889be4e9fb55fe9c272e219277524630bf9d39e
