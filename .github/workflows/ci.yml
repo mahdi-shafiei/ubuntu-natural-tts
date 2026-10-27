@@ -19,10 +19,10 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           python-version: "3.12"
-      - name: Install development dependencies
-        run: uv venv && uv pip install -e ".[dev]"
+      - name: Install development dependencies from the lock
+        run: uv sync --locked --extra dev
       - name: Run pre-commit (ruff, mypy, shellcheck, pytest with coverage gate)
-        run: uv run pre-commit run --all-files --show-diff-on-failure
+        run: uv run --no-sync pre-commit run --all-files --show-diff-on-failure
 
   integration:
     name: Integration (real gsettings and GNOME schemas)
@@ -37,10 +37,10 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y gnome-settings-daemon-common dconf-cli \
             dconf-service dbus-daemon
-      - name: Install development dependencies
-        run: uv venv && uv pip install -e ".[dev]"
+      - name: Install development dependencies from the lock
+        run: uv sync --locked --extra dev
       - name: Run integration tests on a private D-Bus session
-        run: dbus-run-session -- uv run pytest -m integration --no-cov -rs
+        run: dbus-run-session -- uv run --no-sync pytest -m integration --no-cov -rs
 
   install:
     name: install.sh end to end (no desktop session)
