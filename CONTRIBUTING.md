@@ -14,8 +14,7 @@ version, your desktop (GNOME, KDE, ...) and session type
 ```bash
 git clone https://github.com/mahdi-shafiei/ubuntu-natural-tts.git
 cd ubuntu-natural-tts
-uv venv --python 3.12
-uv pip install -e ".[dev]"
+uv sync --python 3.12 --extra dev
 uv run pre-commit install
 ```
 

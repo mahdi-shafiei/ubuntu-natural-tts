@@ -546,7 +546,7 @@ installed files. Settings in `~/.config/natural-tts` are kept.
 ## Development
 
 ```bash
-uv venv --python 3.12 && uv pip install -e ".[dev]"
+uv sync --python 3.12 --extra dev
 uv run pre-commit install
 uv run pytest                      # unit tests with a coverage gate
 dbus-run-session -- uv run pytest -m integration   # real gsettings
